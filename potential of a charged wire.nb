@@ -1,0 +1,559 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 8.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       157,          7]
+NotebookDataLength[     17858,        550]
+NotebookOptionsPosition[     16509,        499]
+NotebookOutlinePosition[     16865,        515]
+CellTagsIndexPosition[     16822,        512]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[TextData[{
+ "Potential of a 2 D thin slab extended from -\[Infinity] to +\[Infinity] \
+along ",
+ Cell[BoxData[
+  FormBox["y", TraditionalForm]],
+  FormatType->"TraditionalForm"],
+ " and from ",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{
+    RowBox[{"-", "a"}], "/", "2"}], TraditionalForm]],
+  FormatType->"TraditionalForm"],
+ " to ",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{"a", "/", "2"}], TraditionalForm]],
+  FormatType->"TraditionalForm"],
+ " along ",
+ Cell[BoxData[
+  FormBox["z", TraditionalForm]],
+  FormatType->"TraditionalForm"]
+}], "Subtitle",
+ CellChangeTimes->{{3.577439158118915*^9, 3.577439265363146*^9}}],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Marco Gibertini and Giovanni Pizzi, May 2013\
+\>", "Subsubsection",
+ CellChangeTimes->{{3.577439290018322*^9, 3.577439313250588*^9}}],
+
+Cell["\<\
+We calculate the electric field on the x axis, that for symmetry reasons will \
+be oriented along x. We sum together the 4 contributions from the four points \
+(-x,-z), (-x,+z), (+x,-z) and (+x,+z) considering a factor of 4, only the x \
+component of the electric field, and integrating only on 1/4 of the slab.\
+\>", "Text",
+ CellChangeTimes->{{3.57743928234128*^9, 3.5774394640295973`*^9}}],
+
+Cell[TextData[{
+ "Note : we consider a slab with linear charge density \[Lambda] (charge per \
+unit length along y), having thus a surface density \[Sigma]=\[Lambda]/",
+ StyleBox["a",
+  FontSlant->"Italic"]
+}], "Text",
+ CellChangeTimes->{{3.577439483214343*^9, 3.577439548650321*^9}}],
+
+Cell["\<\
+Note : we don\[CloseCurlyQuote]t calculate directly the potential energy \
+because the integral would diverge if we choose the zero of the potential at \
+infinity. We instead first obtain the electric field and then integrate to \
+obtain the potential energy, setting the zero at the slab position.\
+\>", "Text",
+ CellChangeTimes->{{3.577439469940044*^9, 3.577439482164302*^9}, {
+  3.577439573299321*^9, 3.577439615311986*^9}}],
+
+Cell[TextData[{
+ "Electric field for x>0. Each contribution (dydz) has charge ",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{"q", " ", "=", " ", 
+    RowBox[{"\[Sigma]", " ", "*", " ", 
+     RowBox[{"(", "dydz", ")"}]}]}], TraditionalForm]],
+  FormatType->"TraditionalForm"],
+ " and contributes with a field ",
+ Cell[BoxData[
+  FormBox[
+   RowBox[{"q", "/", 
+    SuperscriptBox["r", "2"]}], TraditionalForm]],
+  FormatType->"TraditionalForm"],
+ "; I integrate the ",
+ Cell[BoxData[
+  FormBox["x", TraditionalForm]],
+  FormatType->"TraditionalForm"],
+ " component only"
+}], "Text",
+ CellChangeTimes->{{3.577439651051906*^9, 3.5774397540192957`*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Epos", " ", "=", " ", 
+  RowBox[{"Integrate", "[", 
+   RowBox[{
+    FractionBox[
+     RowBox[{"4", " ", "x", " ", "*", " ", 
+      RowBox[{"\[Lambda]", "/", "a"}]}], 
+     SuperscriptBox[
+      RowBox[{"(", 
+       RowBox[{
+        SuperscriptBox["x", "2"], "+", 
+        SuperscriptBox["y", "2"], "+", 
+        SuperscriptBox["z", "2"]}], ")"}], 
+      RowBox[{"3", "/", "2"}]]], ",", 
+    RowBox[{"{", 
+     RowBox[{"y", ",", "0", ",", "\[Infinity]"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"z", ",", "0", ",", 
+      RowBox[{"a", "/", "2"}]}], "}"}], ",", 
+    RowBox[{"Assumptions", "\[Rule]", " ", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"\[Lambda]", ">", "0"}], ",", 
+       RowBox[{"x", ">", "0"}], ",", 
+       RowBox[{"a", ">", "0"}]}], "}"}]}]}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.577026029833704*^9, 3.5770261454560223`*^9}, {
+   3.577026204423003*^9, 3.5770262237592163`*^9}, {3.5770265420698023`*^9, 
+   3.5770265560625887`*^9}, {3.577026703147423*^9, 3.577026778065196*^9}, {
+   3.577026897785194*^9, 3.577026898249363*^9}, 3.57743925221541*^9, {
+   3.5774394510652037`*^9, 3.5774394511453*^9}, {3.57743952483889*^9, 
+   3.57743956135956*^9}, {3.5774396453914347`*^9, 3.577439669674295*^9}, {
+   3.577439764207597*^9, 3.5774397666426363`*^9}}],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{"4", " ", "\[Lambda]", " ", 
+   RowBox[{"ArcCos", "[", 
+    FractionBox[
+     RowBox[{"2", " ", "x"}], 
+     SqrtBox[
+      RowBox[{
+       SuperscriptBox["a", "2"], "+", 
+       RowBox[{"4", " ", 
+        SuperscriptBox["x", "2"]}]}]]], "]"}]}], "a"]], "Output",
+ CellChangeTimes->{{3.5774397607139797`*^9, 3.577439769148408*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Eneg", " ", "=", " ", 
+  RowBox[{"Integrate", "[", 
+   RowBox[{
+    FractionBox[
+     RowBox[{"4", " ", "x", " ", "*", " ", 
+      RowBox[{"\[Lambda]", "/", "a"}]}], 
+     SuperscriptBox[
+      RowBox[{"(", 
+       RowBox[{
+        SuperscriptBox["x", "2"], "+", 
+        SuperscriptBox["y", "2"], "+", 
+        SuperscriptBox["z", "2"]}], ")"}], 
+      RowBox[{"3", "/", "2"}]]], ",", 
+    RowBox[{"{", 
+     RowBox[{"y", ",", "0", ",", "\[Infinity]"}], "}"}], ",", 
+    RowBox[{"{", 
+     RowBox[{"z", ",", "0", ",", 
+      RowBox[{"a", "/", "2"}]}], "}"}], ",", 
+    RowBox[{"Assumptions", "\[Rule]", " ", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"\[Lambda]", ">", "0"}], ",", 
+       RowBox[{"x", "<", "0"}], ",", 
+       RowBox[{"a", ">", "0"}]}], "}"}]}]}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.577026029833704*^9, 3.5770261454560223`*^9}, {
+   3.577026204423003*^9, 3.5770262237592163`*^9}, {3.5770265420698023`*^9, 
+   3.5770265560625887`*^9}, {3.577026703147423*^9, 3.577026778065196*^9}, {
+   3.577026897785194*^9, 3.577026898249363*^9}, 3.57743925221541*^9, {
+   3.5774394510652037`*^9, 3.5774394511453*^9}, {3.57743952483889*^9, 
+   3.57743956135956*^9}, {3.5774396453914347`*^9, 3.577439669674295*^9}, {
+   3.577439764207597*^9, 3.577439778014777*^9}}],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{"4", " ", "\[Lambda]", " ", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{"-", "\[Pi]"}], "+", 
+     RowBox[{"ArcCos", "[", 
+      FractionBox[
+       RowBox[{"2", " ", "x"}], 
+       SqrtBox[
+        RowBox[{
+         SuperscriptBox["a", "2"], "+", 
+         RowBox[{"4", " ", 
+          SuperscriptBox["x", "2"]}]}]]], "]"}]}], ")"}]}], "a"]], "Output",
+ CellChangeTimes->{3.57743978099321*^9}]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Efield", "[", 
+   RowBox[{"x_", ",", "\[Lambda]_", ",", "a_"}], "]"}], ":=", 
+  FractionBox[
+   RowBox[{"4", " ", "\[Lambda]", " ", 
+    RowBox[{"(", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"-", "\[Pi]"}], " ", 
+       RowBox[{"UnitStep", "[", 
+        RowBox[{"-", "x"}], "]"}]}], "+", 
+      RowBox[{"ArcCos", "[", 
+       FractionBox[
+        RowBox[{"2", " ", "x"}], 
+        SqrtBox[
+         RowBox[{
+          SuperscriptBox["a", "2"], "+", 
+          RowBox[{"4", " ", 
+           SuperscriptBox["x", "2"]}]}]]], "]"}]}], ")"}]}], "a"]}]], "Input",\
+
+ CellChangeTimes->{{3.5774401974357147`*^9, 3.577440222784162*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Manipulate", "[", 
+  RowBox[{
+   RowBox[{"Plot", "[", 
+    RowBox[{
+     RowBox[{"Efield", "[", 
+      RowBox[{"x", ",", "1", ",", "a"}], "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"x", ",", 
+       RowBox[{"-", "4"}], ",", "4"}], "}"}], ",", 
+     RowBox[{"PlotRange", "\[Rule]", " ", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"-", "2"}], "\[Pi]"}], ",", 
+        RowBox[{"2", "\[Pi]"}]}], "}"}]}]}], "]"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"a", ",", "0.001", ",", "20"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.577440234944559*^9, 3.577440235790511*^9}}],
+
+Cell[BoxData[
+ TagBox[
+  StyleBox[
+   DynamicModuleBox[{$CellContext`a$$ = 0.001, Typeset`show$$ = True, 
+    Typeset`bookmarkList$$ = {}, Typeset`bookmarkMode$$ = "Menu", 
+    Typeset`animator$$, Typeset`animvar$$ = 1, Typeset`name$$ = 
+    "\"untitled\"", Typeset`specs$$ = {{
+      Hold[$CellContext`a$$], 0.001, 20}}, Typeset`size$$ = {
+    360., {110., 114.}}, Typeset`update$$ = 0, Typeset`initDone$$, 
+    Typeset`skipInitDone$$ = True, $CellContext`a$31404$$ = 0}, 
+    DynamicBox[Manipulate`ManipulateBoxes[
+     1, StandardForm, "Variables" :> {$CellContext`a$$ = 0.001}, 
+      "ControllerVariables" :> {
+        Hold[$CellContext`a$$, $CellContext`a$31404$$, 0]}, 
+      "OtherVariables" :> {
+       Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
+        Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
+        Typeset`specs$$, Typeset`size$$, Typeset`update$$, Typeset`initDone$$,
+         Typeset`skipInitDone$$}, "Body" :> Plot[
+        $CellContext`Efield[$CellContext`x, 
+         1, $CellContext`a$$], {$CellContext`x, -4, 4}, 
+        PlotRange -> {(-2) Pi, 2 Pi}], 
+      "Specifications" :> {{$CellContext`a$$, 0.001, 20}}, "Options" :> {}, 
+      "DefaultOptions" :> {}],
+     ImageSizeCache->{403., {152., 158.}},
+     SingleEvaluation->True],
+    Deinitialization:>None,
+    DynamicModuleValues:>{},
+    SynchronousInitialization->True,
+    UnsavedVariables:>{Typeset`initDone$$},
+    UntrackedVariables:>{Typeset`size$$}], "Manipulate",
+   Deployed->True,
+   StripOnInput->False],
+  Manipulate`InterpretManipulate[1]]], "Output",
+ CellChangeTimes->{3.577440237221487*^9}]
+}, Open  ]],
+
+Cell[TextData[{
+ "I calculate the potential energy at coordinate ",
+ Cell[BoxData[
+  FormBox["x0", TraditionalForm]],
+  FormatType->"TraditionalForm"],
+ " by integration of the eletric field, setting the zero of the potential at \
+the slab position. I do it independently for x>0 and x<0."
+}], "Text",
+ CellChangeTimes->{{3.577439808504649*^9, 3.577439876343369*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Vpos", " ", "=", " ", 
+  RowBox[{
+   FractionBox[
+    RowBox[{"4", "\[Lambda]"}], "a"], 
+   RowBox[{"Integrate", "[", 
+    RowBox[{
+     RowBox[{"ArcCos", "[", 
+      FractionBox[
+       RowBox[{"2", " ", "x"}], 
+       SqrtBox[
+        RowBox[{
+         SuperscriptBox["a", "2"], "+", 
+         RowBox[{"4", " ", 
+          SuperscriptBox["x", "2"]}]}]]], "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"x", ",", "0", ",", "x0"}], "}"}], ",", 
+     RowBox[{"Assumptions", "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"x0", ">", "0"}], ",", 
+        RowBox[{"a", ">", "0"}]}], "}"}]}]}], "]"}]}]}]], "Input",
+ CellChangeTimes->{{3.577439877852755*^9, 3.577439911921793*^9}, {
+  3.577439971285119*^9, 3.577440003670879*^9}}],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{"4", " ", "\[Lambda]", " ", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{"x0", " ", 
+      RowBox[{"ArcCos", "[", 
+       FractionBox[
+        RowBox[{"2", " ", "x0"}], 
+        SqrtBox[
+         RowBox[{
+          SuperscriptBox["a", "2"], "+", 
+          RowBox[{"4", " ", 
+           SuperscriptBox["x0", "2"]}]}]]], "]"}]}], "+", 
+     RowBox[{
+      FractionBox["1", "4"], " ", "a", " ", 
+      RowBox[{"Log", "[", 
+       RowBox[{"1", "+", 
+        FractionBox[
+         RowBox[{"4", " ", 
+          SuperscriptBox["x0", "2"]}], 
+         SuperscriptBox["a", "2"]]}], "]"}]}]}], ")"}]}], "a"]], "Output",
+ CellChangeTimes->{
+  3.577439906621031*^9, 3.57743996140475*^9, {3.5774399982756844`*^9, 
+   3.577440008005343*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Vneg", "=", " ", 
+  RowBox[{
+   FractionBox[
+    RowBox[{"4", "\[Lambda]"}], "a"], 
+   RowBox[{"Integrate", "[", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "\[Pi]"}], "+", 
+      RowBox[{"ArcCos", "[", 
+       FractionBox[
+        RowBox[{"2", " ", "x"}], 
+        SqrtBox[
+         RowBox[{
+          SuperscriptBox["a", "2"], "+", 
+          RowBox[{"4", " ", 
+           SuperscriptBox["x", "2"]}]}]]], "]"}]}], ",", 
+     RowBox[{"{", 
+      RowBox[{"x", ",", "0", ",", "x0"}], "}"}], ",", 
+     RowBox[{"Assumptions", "\[Rule]", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"x0", "<", "0"}], ",", 
+        RowBox[{"a", ">", "0"}]}], "}"}]}]}], "]"}]}]}]], "Input",
+ CellChangeTimes->{{3.577440012270528*^9, 3.5774400339420443`*^9}}],
+
+Cell[BoxData[
+ FractionBox[
+  RowBox[{"4", " ", "\[Lambda]", " ", 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "\[Pi]"}], " ", "x0"}], "+", 
+     RowBox[{"x0", " ", 
+      RowBox[{"ArcCos", "[", 
+       FractionBox[
+        RowBox[{"2", " ", "x0"}], 
+        SqrtBox[
+         RowBox[{
+          SuperscriptBox["a", "2"], "+", 
+          RowBox[{"4", " ", 
+           SuperscriptBox["x0", "2"]}]}]]], "]"}]}], "+", 
+     RowBox[{
+      FractionBox["1", "4"], " ", "a", " ", 
+      RowBox[{"Log", "[", 
+       RowBox[{"1", "+", 
+        FractionBox[
+         RowBox[{"4", " ", 
+          SuperscriptBox["x0", "2"]}], 
+         SuperscriptBox["a", "2"]]}], "]"}]}]}], ")"}]}], "a"]], "Output",
+ CellChangeTimes->{3.577440038934111*^9}]
+}, Open  ]],
+
+Cell["\<\
+I write down the obtained potential on the whole x axis\
+\>", "Text",
+ CellChangeTimes->{{3.577440122514842*^9, 3.577440148118495*^9}}],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"V", "[", 
+   RowBox[{"x_", ",", "\[Lambda]_", ",", "a_"}], "]"}], ":=", 
+  RowBox[{"4", 
+   RowBox[{"\[Lambda]", "/", "a"}], 
+   RowBox[{"(", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"-", "\[Pi]"}], " ", "x", " ", 
+      RowBox[{"UnitStep", "[", 
+       RowBox[{"-", "x"}], "]"}]}], "+", 
+     RowBox[{"x", " ", 
+      RowBox[{"ArcCos", "[", 
+       FractionBox[
+        RowBox[{"2", " ", "x"}], 
+        SqrtBox[
+         RowBox[{
+          SuperscriptBox["a", "2"], "+", 
+          RowBox[{"4", " ", 
+           SuperscriptBox["x", "2"]}]}]]], "]"}]}], "+", 
+     RowBox[{
+      FractionBox["1", "4"], " ", "a", " ", 
+      RowBox[{"Log", "[", 
+       RowBox[{"1", "+", 
+        FractionBox[
+         RowBox[{"4", " ", 
+          SuperscriptBox["x", "2"]}], 
+         SuperscriptBox["a", "2"]]}], "]"}]}]}], ")"}]}]}]], "Input",
+ CellChangeTimes->{{3.577440048244533*^9, 3.577440119644677*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ RowBox[{"Manipulate", "[", 
+  RowBox[{
+   RowBox[{"Plot", "[", 
+    RowBox[{
+     RowBox[{"V", "[", 
+      RowBox[{"x", ",", "1", ",", "a"}], "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"x", ",", 
+       RowBox[{"-", "4"}], ",", "4"}], "}"}], ",", 
+     RowBox[{"PlotRange", "\[Rule]", " ", 
+      RowBox[{"{", 
+       RowBox[{
+        RowBox[{"-", "10"}], ",", "10"}], "}"}]}]}], "]"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"a", ",", "0.01", ",", "20"}], "}"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.577440173467866*^9, 3.5774401841361313`*^9}, {
+  3.5774402679178057`*^9, 3.577440289828802*^9}}],
+
+Cell[BoxData[
+ TagBox[
+  StyleBox[
+   DynamicModuleBox[{$CellContext`a$$ = 0.01, Typeset`show$$ = True, 
+    Typeset`bookmarkList$$ = {}, Typeset`bookmarkMode$$ = "Menu", 
+    Typeset`animator$$, Typeset`animvar$$ = 1, Typeset`name$$ = 
+    "\"untitled\"", Typeset`specs$$ = {{
+      Hold[$CellContext`a$$], 0.01, 20}}, Typeset`size$$ = {
+    360., {115., 119.}}, Typeset`update$$ = 0, Typeset`initDone$$, 
+    Typeset`skipInitDone$$ = True, $CellContext`a$61704$$ = 0}, 
+    DynamicBox[Manipulate`ManipulateBoxes[
+     1, StandardForm, "Variables" :> {$CellContext`a$$ = 0.01}, 
+      "ControllerVariables" :> {
+        Hold[$CellContext`a$$, $CellContext`a$61704$$, 0]}, 
+      "OtherVariables" :> {
+       Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
+        Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
+        Typeset`specs$$, Typeset`size$$, Typeset`update$$, Typeset`initDone$$,
+         Typeset`skipInitDone$$}, "Body" :> Plot[
+        $CellContext`V[$CellContext`x, 
+         1, $CellContext`a$$], {$CellContext`x, -4, 4}, 
+        PlotRange -> {-10, 10}], 
+      "Specifications" :> {{$CellContext`a$$, 0.01, 20}}, "Options" :> {}, 
+      "DefaultOptions" :> {}],
+     ImageSizeCache->{403., {157., 163.}},
+     SingleEvaluation->True],
+    Deinitialization:>None,
+    DynamicModuleValues:>{},
+    SynchronousInitialization->True,
+    UnsavedVariables:>{Typeset`initDone$$},
+    UntrackedVariables:>{Typeset`size$$}], "Manipulate",
+   Deployed->True,
+   StripOnInput->False],
+  Manipulate`InterpretManipulate[1]]], "Output",
+ CellChangeTimes->{{3.577440254639615*^9, 3.577440290123056*^9}, 
+   3.577440777364358*^9}]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{740, 706},
+WindowMargins->{{Automatic, 342}, {Automatic, 24}},
+FrontEndVersion->"8.0 for Mac OS X x86 (32-bit, 64-bit Kernel) (October 6, \
+2011)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[579, 22, 617, 22, 71, "Subtitle"],
+Cell[CellGroupData[{
+Cell[1221, 48, 143, 3, 24, "Subsubsection"],
+Cell[1367, 53, 402, 6, 56, "Text"],
+Cell[1772, 61, 284, 6, 26, "Text"],
+Cell[2059, 69, 437, 7, 56, "Text"],
+Cell[2499, 78, 641, 20, 47, "Text"],
+Cell[CellGroupData[{
+Cell[3165, 102, 1304, 31, 81, "Input"],
+Cell[4472, 135, 369, 11, 62, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4878, 151, 1302, 31, 81, "Input"],
+Cell[6183, 184, 432, 14, 67, "Output"]
+}, Open  ]],
+Cell[6630, 201, 666, 21, 69, "Input"],
+Cell[CellGroupData[{
+Cell[7321, 226, 623, 18, 43, "Input"],
+Cell[7947, 246, 1622, 34, 327, "Output"]
+}, Open  ]],
+Cell[9584, 283, 367, 8, 41, "Text"],
+Cell[CellGroupData[{
+Cell[9976, 295, 765, 23, 57, "Input"],
+Cell[10744, 320, 765, 24, 67, "Output"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[11546, 349, 773, 24, 57, "Input"],
+Cell[12322, 375, 752, 24, 67, "Output"]
+}, Open  ]],
+Cell[13089, 402, 145, 3, 26, "Text"],
+Cell[13237, 407, 932, 29, 66, "Input"],
+Cell[CellGroupData[{
+Cell[14194, 440, 615, 17, 27, "Input"],
+Cell[14812, 459, 1657, 35, 337, "Output"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)

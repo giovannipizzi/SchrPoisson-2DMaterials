@@ -1,0 +1,19 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module schrpoisson_wire ! in 
+    interface  ! in :schrpoisson_wire
+        subroutine v_of_rho(v,x,lambda,eps,a,n) ! in :schrpoisson_wire:schrpoisson_wire.f90
+            double precision dimension(n),intent(out),depend(n) :: v
+            double precision dimension(n),intent(in) :: x
+            double precision dimension(n),intent(in),depend(n) :: lambda
+            double precision dimension(n),intent(in),depend(n) :: eps
+            double precision intent(in) :: a
+            integer, optional,intent(in),check(len(x)=n,len(lambda)=x,len(eps)=x),depend(x) :: n=len(x)
+        end subroutine v_of_rho
+    end interface 
+end python module schrpoisson_wire
+
+! This file was auto-generated with f2py (version:2).
+! And then modified by G. Pizzi
+! See http://cens.ioc.ee/projects/f2py2e/
