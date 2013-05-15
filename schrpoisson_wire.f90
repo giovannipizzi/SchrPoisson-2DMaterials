@@ -1,7 +1,9 @@
 subroutine el_field_slab(x,a,lambda,eps,elfield)
-  implicit none
   ! El. field (along x) of a slab of thickness a along z, infinitely extended along y,
   ! put at x=0, calculated at the point (x,0,0)
+  !
+  ! We don't use it anymore, the limit a->0 is directly usable (see el_field_wire function)
+  implicit none
   double precision, intent(in) :: x ! distance from the slab, in angstrom
   double precision, intent(in) :: a ! thickness along z, in angstrom
   double precision, intent(in) :: lambda ! linear charge density in e/cm
@@ -29,9 +31,9 @@ end subroutine el_field_slab
 
 subroutine el_field_wire(x,lambda,eps,elfield)
   implicit none
-  ! El. field (along x) of a slab of thickness a along z, infinitely extended along y,
-  ! put at x=0, calculated at the point (x,0,0)
-  double precision, intent(in) :: x ! distance from the slab, in angstrom
+  ! El. field (along x) of a wire at x=z=0, infinitely extended along y,
+  ! calculated at the point (x,0,0)
+  double precision, intent(in) :: x ! distance from the wire, in angstrom
   double precision, intent(in) :: lambda ! linear charge density in e/cm
   double precision, intent(in) :: eps ! relative dielectric constant at the point at which
                                       ! we want to calculate the electric field (adimensional)
@@ -45,6 +47,7 @@ subroutine el_field_wire(x,lambda,eps,elfield)
   if (x .ne. 0) then
      elfield = 2.d0*lambda/x
   else 
+     ! To avoid over/underflow errors; in any case, one should not call it for x==0
      elfield = 0.d0
   end if
 
@@ -53,6 +56,49 @@ subroutine el_field_wire(x,lambda,eps,elfield)
   
 end subroutine el_field_wire
 
+subroutine el_field_wire_array(x,period,lambda,eps,elfield)
+  implicit none
+  ! El. field (along x) of a wire array at z=0, infinitely extended along y, and x=n*period,
+  ! where n in an integer (positive, negative or zero) and period is the periodicity of the array.
+  ! The field is calculated at the point (x,0,0), where x should be between zero and period.
+  ! The code internally brings the value within the [0,period] range.
+  ! The el. field diverges as 1/x near 0 and period, so at the edges we set the value to zero.
+  
+  double precision, intent(in) :: x ! distance from the wire, in angstrom
+  double precision, intent(in) :: period ! periodicity of the wire array, in angstrom
+  double precision, intent(in) :: lambda ! linear charge density in e/cm
+  double precision, intent(in) :: eps ! relative dielectric constant at the point at which
+                                      ! we want to calculate the electric field (adimensional)
+  double precision :: elfield ! V/ang
+  double precision :: xi ! x/period in the [0,1[ range
+
+  double precision :: PI, FOURPIEPS0
+  parameter(PI=3.1415926535897932d0)
+  ! FOURPIEPS0 = 4*pi*epsilon_0 in e/(volt * cm)
+  parameter(FOURPIEPS0=6944615.72)
+
+  ! Modulo brings in the [0,1[ interval, and does the correct thing for negative numbers
+  xi = MODULO(x/period, 1.d0)
+
+  if ((xi .eq. 0) .or. (xi .eq. 1)) then
+     elfield = 0.d0 ! the xi == 1 should not be needed, but I put it just in case
+  else 
+     ! Cotangent is 1/tangent
+     elfield = 2.d0 * PI * lambda / TAN(PI * xi) / period
+  end if
+
+  ! with the given units, I get in this way the electric field in V/ang
+  elfield = elfield / FOURPIEPS0 / eps
+  
+end subroutine el_field_wire_array
+
+
+
+!! TODO: change v_of_rho to v_of_rho_nonperiodic, remove a from parameters and pyf, and change
+!! function call below
+!! TODO: add v_of_rho_periodic to call the wire_array function, add it to pyf
+!! TODO: change the python code to remove dependencies on 'a', and use the correct function
+!! depending on periodicity = True or False
 subroutine v_of_rho(v,x,lambda,eps,a,n)
   implicit none
   ! return the potential of a given density of wires. Set the potential to zero at left edge.
