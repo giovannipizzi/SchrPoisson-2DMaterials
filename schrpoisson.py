@@ -2,17 +2,8 @@ import numpy as n
 import scipy
 import scipy.linalg
 
-## TODO: note: the subband filling has to be done using the 1D dos
-## at T=0 it should be analytical
-## at T>0 it must be done numerically
-## For the moment, implement T=0 only in a different function, so that it becomes easy to switch
-## to T>0 later
-
 #hbar^2/m0 in units of eV*ang*ang
 HBAR2OVERM0=7.61996163
-
-## TODO: implement schr. poisson solver, see below
-
 
 # grid spacing in ang; this is exact, and layer lengths are adapted to keep a constant
 # step. This allows the second-derivative hamiltonian matrix to be symmetric
@@ -52,17 +43,17 @@ mat_properties = {
         'ndoping': 0.,      # the doping linear density, in e/cm
         },
     'n_deltadoping': {
-        'ndoping': 1.e2,     # If a layer has thickness zero, only the doping needs to be defined
+        'ndoping': 1.e5,     # If a layer has thickness zero, only the doping needs to be defined
         },
     'p_deltadoping': {
-        'ndoping': 0,#-1.e2,     # If a layer has thickness zero, only the doping needs to be defined
+        'ndoping': -1.e5,     # If a layer has thickness zero, only the doping needs to be defined
         }
     }
 
 
 # List of layers, and their thickness in angstrom
 layers = [
-#    ('shell',100.),
+    ('shell',100.),
     ('mat1',10.),
     ('n_deltadoping',0.),
     ('mat2',10.),
@@ -80,7 +71,7 @@ layers = [
     ('mat2',10.),
     ('p_deltadoping',0.),
     ('mat1',10.),
-#    ('shell',100.),
+    ('shell',100.),
     ]
 
 class Slab(object):
