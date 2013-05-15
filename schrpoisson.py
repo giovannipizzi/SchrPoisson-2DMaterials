@@ -5,13 +5,11 @@ import scipy.linalg
 #hbar^2/m0 in units of eV*ang*ang
 HBAR2OVERM0=7.61996163
 
+is_periodic = True
+
 # grid spacing in ang; this is exact, and layer lengths are adapted to keep a constant
 # step. This allows the second-derivative hamiltonian matrix to be symmetric
 delta_x = 0.1
-
-# Thickness of the slabs along z, in angstrom
-# Change a, with fixed linrho, and converge this parameter for a->0
-a = 0.001
 
 # Small threshold to check for charge neutrality
 small_threshold = 1.e-6
@@ -43,45 +41,55 @@ mat_properties = {
         'ndoping': 0.,      # the doping linear density, in e/cm
         },
     'n_deltadoping': {
-        'ndoping': 1.e5,     # If a layer has thickness zero, only the doping needs to be defined
+        'ndoping': 3.e5,     # If a layer has thickness zero, only the doping needs to be defined
         },
     'p_deltadoping': {
-        'ndoping': -1.e5,     # If a layer has thickness zero, only the doping needs to be defined
+        'ndoping': -3.e5,     # If a layer has thickness zero, only the doping needs to be defined
         }
     }
 
 
 # List of layers, and their thickness in angstrom
+# For non-periodic boundary conditions
+#layers = [
+#    #    ('shell',100.),
+#    ('mat1',10.),
+#    ('n_deltadoping',0.),
+#    ('mat2',10.),
+#    ('p_deltadoping',0.),
+#    ('mat1',10.),
+#    ('n_deltadoping',0.),
+#    ('mat2',10.),
+#    ('p_deltadoping',0.),
+#    ('mat1',10.),
+#    ('n_deltadoping',0.),
+#    ('mat2',10.),
+#    ('p_deltadoping',0.),
+#    ('mat1',10.),
+#    ('n_deltadoping',0.),
+#    ('mat2',10.),
+#    ('p_deltadoping',0.),
+#    ('mat1',10.),
+#    #    ('shell',100.),
+#    ]
+
+# List of layers, and their thickness in angstrom
+# For periodic boundary conditions
 layers = [
-    ('shell',100.),
-    ('mat1',10.),
+    ('mat1',5.),
     ('n_deltadoping',0.),
     ('mat2',10.),
     ('p_deltadoping',0.),
-    ('mat1',10.),
-    ('n_deltadoping',0.),
-    ('mat2',10.),
-    ('p_deltadoping',0.),
-    ('mat1',10.),
-    ('n_deltadoping',0.),
-    ('mat2',10.),
-    ('p_deltadoping',0.),
-    ('mat1',10.),
-    ('n_deltadoping',0.),
-    ('mat2',10.),
-    ('p_deltadoping',0.),
-    ('mat1',10.),
-    ('shell',100.),
+    ('mat1',5.),
     ]
 
+
 class Slab(object):
-    def __init__(self,layers,a):
+    def __init__(self,layers):
         """
         Pass a suitable xgrid (containing the sampling points in units of angstroms) and
         a (in angstroms)
         """
-        self._a = a
-
         if len(layers) == 0:
             raise ValueError("layers must have at least one layer")
 
@@ -185,13 +193,18 @@ class Slab(object):
         """
         import schrpoisson_wire
 
-        V_conv_threshold = 1.e-2
+        V_conv_threshold = 1.e-4
 
         free_electrons_density = get_electron_density(c_states, e_fermi, self._condmass)
         free_holes_density = get_hole_density(v_states, e_fermi, self._valmass)
 
         total_charge_density =  self._doping - free_electrons_density + free_holes_density
-        new_V = schrpoisson_wire.v_of_rho(self._xgrid, total_charge_density, self._epsilon, self._a)
+        if is_periodic:
+            new_V = schrpoisson_wire.v_of_rho_periodic(
+                self._xgrid, total_charge_density, self._epsilon)
+        else:
+            new_V = schrpoisson_wire.v_of_rho_nonperiodic(
+                self._xgrid, total_charge_density, self._epsilon)
 
         if zero_elfield:
             slope = (new_V[-1] - new_V[0])/(self._xgrid[-1] - self._xgrid[0])
@@ -205,6 +218,7 @@ class Slab(object):
         #self._V += n.sign(new_V - self._V) * absstep
             
         current_max_step_size = abs(step).max()
+        print 'convergence param:', current_max_step_size
         # If current_max_step_size < max_step_size, I just add 'step', i.e.
         # self._V becomes new_V.
         # Otherwise, I rescale such that the maximum movement is max_step_size, globally
@@ -342,23 +356,175 @@ def find_efermi(c_states, v_states, c_mass_array, v_mass_array, target_net_free_
 
     return (ef_r + ef_l)/2.
 
-def get_conduction_states(slab):
+def get_conduction_states_p(slab):
     """
     This function diagonalizes the matrix using the fact that the matrix is banded. This provides
     a huge speedup w.r.t. to a dense matrix.
-    """
-    more_bands_energy = 0. # How many eV to to above the conduction band edge
 
-    # Ham matrix in eV; I store only the diagonal (H[1,:] is the diagonal, and H[0,1:] is the upper diagonal)
+    NOTE: _p stands for the periodic version
+    """
+    more_bands_energy = 0. # How many eV to to above the top of the conduction band
+
+    # Ham matrix in eV; I store only the first two diagonals
+    # H[2,:] is the diagonal,
+    # H[1,1:] is the first upper diagonal,
+    # H[0,2:] is the second upper diagonal
+    H = n.zeros((3, slab.npoints))
+
+    # Two arrays to map the old order of the matrix with the new one, and vice versa
+    rangearray = n.arange(slab.npoints)
+    # this is to be used as index when rebuilding the wavefunctions
+    reordering = n.zeros(slab.npoints,dtype=int)
+    reordering[rangearray <= (slab.npoints-1)//2] = (2 * rangearray)[rangearray <= (slab.npoints-1)//2]
+    reordering[rangearray > (slab.npoints-1)//2] = (
+    2 * slab.npoints - 2 * rangearray - 1)[rangearray > (slab.npoints-1)//2]
+    #    # I don't know if I ever need this
+    #    inverse_reordering = n.zeros(slab.npoints,dtype=int)
+    #    inverse_reordering[::2] = (rangearray//2)[::2]
+    #    inverse_reordering[1::2] = (slab.npoints - (rangearray+1)//2)[1::2]
+
+
+    # Given the index i in the not-reordered matrix, for the matrix element (i-1)--(i),
+    # return the indices in the 2 upper lines of the reordered, banded matrix.
+    # Notes:
+    # * the (i-1)--(i) matrix element is the i-th element of the superdiagonal array
+    #   defined later
+    # * applying reordering, we get that in the reordered matrix, the
+    #   (i-1)--(i) element should occupy the j1--j2 matrix element.
+    # * I resort j1, j2 such that j1 < j2 to fill the upper diagonal
+    #   (NOTE! if this was a complex hermitian matrix, when reorderning I should also take
+    #    the complex conjugate. Here the matrix is real and symmetric and I don't have to worry)
+    # * j2-j1 can only be 1 or 2, if the reordering is correct
+    # * if the j2-j1==1, I have to fill H[1,:], else H[0,:]: the first index is 2-(j2-j1)
+    # * the second index, also due to the fact of that the superdiagonals are stored
+    #   in H[0,2:] and H[1,1:] (see docs of scipy.linalg.eig_banded), is simply j2
+    #
+    # * What happens to the element 1-N (the one that gives periodicity) where N=matrixsize?
+    #   * If I store it in superdiagonal[0], when calculating j1_list, for that element
+    #     I get reordering[-1] == reordering[slab.npoints-1], that is
+    #     what we want.
+    j1_list = reordering[n.arange(slab.npoints)-1]
+    j2_list = reordering[n.arange(slab.npoints)]
+    temp_list = j2_list.copy()
+    indices_to_swap = [j2_list<j1_list]
+    j2_list[indices_to_swap] = j1_list[indices_to_swap]
+    j1_list[indices_to_swap] = temp_list[indices_to_swap]
+    reordering_superdiagonals = ( 2 - (j2_list - j1_list) , j2_list )
+    # A check
+    if any((j2_list - j1_list) < 1) or any((j2_list - j1_list) > 2):
+        raise AssertionError("Wrong indices difference in j1/2_lists (cond)!")
+
+    # On the diagonal, the potential: sum of the electrostatic potential + conduction band profile
+    # This is obtained with get_conduction_profile()
+    H[2,:][reordering] = slab.get_conduction_profile()
+    min_energy = H[2,:].min()
+    max_energy = H[2,:].max() + more_bands_energy
+
+    # The zero-th element contains the periodicity term
+    mass_differences = n.zeros(slab.npoints)
+    mass_differences[0] = (slab._condmass[0] + slab._condmass[-1])/2.    
+    mass_differences[1:] = (slab._condmass[1:] + slab._condmass[:-1])/2.
+    
+    # Finite difference method for 2nd derivatives. Remember that the equation with an effective
+    # mass is:
+    # d/dx ( 1/m(x) d/dx psi(x)), i.e. 1/m(x) goes inside the first derivative
+    # I set the coefficient for the 2nd derivative on the diagonal
+    # mass_differences[1] is the average mass between 0 and 1
+    H[2,:][reordering]  += (HBAR2OVERM0/2.) / delta_x**2 / mass_differences
+    # mass_differences[1+1] is the average mass between 1 and 2
+    H[2,:][reordering]  += (HBAR2OVERM0/2.) / delta_x**2 / mass_differences[
+        (arange(slab.npoints)+1) % slab.npoints]
+
+    # note! The matrix is symmetric only if the mesh step is identical for all steps
+    # I use 1: in the second index because the upper diagonal has one element less, and
+    # this is the format required by eig_banded
+    # Note that this also sets superdiagonal[0] to the correct element that should be at
+    # the corner of the matrix, at position (n-1, 0)
+    superdiagonal = - (HBAR2OVERM0/2.) / delta_x**2 / mass_differences
+    H[reordering_superdiagonals] = superdiagonal
+
+    w, v = scipy.linalg.eig_banded(H, lower=False, eigvals_only=False, 
+                                   overwrite_a_band=True, # May enhance performance
+                                   select='v', select_range=(min_energy,max_energy),
+                                   max_ev=slab.npoints) # max_ev: max # of eigenvalues to expect
+                                                        # I use the worst case scenario, where I get
+                                                        # all of them
+    result_to_reorder = zip(w, v.T)
+    return tuple((w, v[reordering]) for w, v in result_to_reorder)
+
+
+def get_valence_states_p(slab):
+    """
+    See discussion in get_conduction_states, plus comments here for what has changed
+    
+    NOTE: _p stands for the non-periodic version
+    """
+    more_bands_energy = 0. # How many eV to to below the bottom of the valence band
+
+    H = n.zeros((3, slab.npoints))
+
+    rangearray = n.arange(slab.npoints)
+    reordering = n.zeros(slab.npoints,dtype=int)
+    reordering[rangearray <= (slab.npoints-1)//2] = (2 * rangearray)[rangearray <= (slab.npoints-1)//2]
+    reordering[rangearray > (slab.npoints-1)//2] = (
+    2 * slab.npoints - 2 * rangearray - 1)[rangearray > (slab.npoints-1)//2]
+
+    j1_list = reordering[n.arange(slab.npoints)-1]
+    j2_list = reordering[n.arange(slab.npoints)]
+    temp_list = j2_list.copy()
+    indices_to_swap = [j2_list<j1_list]
+    j2_list[indices_to_swap] = j1_list[indices_to_swap]
+    j1_list[indices_to_swap] = temp_list[indices_to_swap]
+    reordering_superdiagonals = ( 2 - (j2_list - j1_list) , j2_list )
+    if any((j2_list - j1_list) < 1) or any((j2_list - j1_list) > 2):
+        raise AssertionError("Wrong indices difference in j1/2_lists (valence)!")
+
+    H[2,:][reordering] = slab.get_valence_profile()
+    min_energy = H[2,:].min() - more_bands_energy
+    max_energy = H[2,:].max() 
+
+    # In the valence bands, it is as if the mass is negative
+    mass_differences = n.zeros(slab.npoints)
+    mass_differences[0]  = -(slab._valmass[0] + slab._valmass[-1])/2.    
+    mass_differences[1:] = -(slab._valmass[1:] + slab._valmass[:-1])/2.
+    
+    H[2,:][reordering]  += (HBAR2OVERM0/2.) / delta_x**2 / mass_differences
+    H[2,:][reordering]  += (HBAR2OVERM0/2.) / delta_x**2 / mass_differences[
+        (arange(slab.npoints)+1) % slab.npoints]
+
+    superdiagonal = - (HBAR2OVERM0/2.) / delta_x**2 / mass_differences
+    H[reordering_superdiagonals] = superdiagonal
+
+    w, v = scipy.linalg.eig_banded(H, lower=False, eigvals_only=False, 
+                                   overwrite_a_band=True, # May enhance performance
+                                   select='v', select_range=(min_energy,max_energy),
+                                   max_ev=slab.npoints) # max_ev: max # of eigenvalues to expect
+                                                        # I use the worst case scenario, where I get
+                                                        # all of them
+    result_to_reorder = zip(w, v.T)
+    return tuple((w, v[reordering]) for w, v in result_to_reorder)
+
+def get_conduction_states_np(slab):
+    """
+    This function diagonalizes the matrix using the fact that the matrix is banded. This provides
+    a huge speedup w.r.t. to a dense matrix.
+
+    NOTE: _np stands for the non-periodic version
+    """
+    more_bands_energy = 0. # How many eV to to above the top of the conduction band
+
+    # Ham matrix in eV; I store only the first upper diagonal
+    # H[1,:] is the diagonal,
+    # H[0,1:] is the first upper diagonal
     H = n.zeros((2, slab.npoints))
 
     # On the diagonal, the potential: sum of the electrostatic potential + conduction band profile
-    H[1,:] = slab._condband + slab._V
+    # This is obtained with get_conduction_profile()
+    H[1,:] = slab.get_conduction_profile()
     min_energy = H[1,:].min()
     max_energy = H[1,:].max() + more_bands_energy
 
-    mass_differences = (slab._condmass[n.arange(slab.npoints)[1:]] + 
-                        slab._condmass[n.arange(slab.npoints)[:-1]])/2.
+    mass_differences = (slab._condmass[1:] + slab._condmass[:-1])/2.
 
     # Finite difference method for 2nd derivatives. Remember that the equation with an effective
     # mass is:
@@ -380,31 +546,26 @@ def get_conduction_states(slab):
                                                         # all of them
     return zip(w, v.T)
 
-def get_valence_states(slab):
-    more_bands_energy = 0. # How many eV to to above the conduction band edge
+def get_valence_states_np(slab):
+    """
+    See discussion in get_conduction_states, plus comments here for what has changed
 
-    # Ham matrix in eV; I store only the diagonal (H[1,:] is the diagonal, and H[0,1:] is the upper diagonal)
+    NOTE: _np stands for the non-periodic version
+    """
+    more_bands_energy = 0. # How many eV to to below the bottom of the valence band
+
     H = n.zeros((2, slab.npoints))
 
-    # On the diagonal, the potential: sum of the electrostatic potential + conduction band profile
-    H[1,:] = slab._valband + slab._V
+    H[1,:] = slab.get_valence_profile()
     min_energy = H[1,:].min() - more_bands_energy
     max_energy = H[1,:].max() 
 
     # In the valence bands, it is as if the mass is negative
-    mass_differences = -(slab._valmass[n.arange(slab.npoints)[1:]] + 
-                         slab._valmass[n.arange(slab.npoints)[:-1]])/2.
+    mass_differences = -(slab._valmass[1:] + slab._valmass[:-1])/2.
 
-    # Finite difference method for 2nd derivatives. Remember that the equation with an effective
-    # mass is:
-    # d/dx ( 1/m(x) d/dx psi(x)), i.e. 1/m(x) goes inside the first derivative
-    # I set the coefficient for the 2nd derivative on the diagonal
     H[1,1:] += (HBAR2OVERM0/2.) / delta_x**2 / mass_differences
     H[1,:-1]  += (HBAR2OVERM0/2.) / delta_x**2 / mass_differences
 
-    # note! The matrix is symmetric only if the mesh step is identical for all steps
-    # I use 1: in the second index because the upper diagonal has one element less, and
-    # this is the format required by eig_banded
     H[0,1:] = - (HBAR2OVERM0/2.) / delta_x**2 / mass_differences
 
     w, v = scipy.linalg.eig_banded(H, lower=False, eigvals_only=False, 
@@ -422,13 +583,21 @@ if __name__ == "__main__":
     zoom_factor = 10. # To plot eigenstates
     max_steps = 50   # max number of steps of self-consistency
 
-    slab = Slab(layers=layers, a=a)
+    print 'starting the code'
+    slab = Slab(layers=layers)
+
+    print 'slab created'
 
     try:
         converged = False
         for iteration in range(max_steps):
-            c_states = get_conduction_states(slab)   
-            v_states = get_valence_states(slab)
+            print 'starting iteration {}...'.format(iteration)
+            if is_periodic:
+                c_states = get_conduction_states_p(slab)   
+                v_states = get_valence_states_p(slab)
+            else:
+                c_states = get_conduction_states_np(slab)   
+                v_states = get_valence_states_np(slab)
             
             e_fermi = find_efermi(c_states, v_states, slab._condmass, slab._valmass, 
                                   target_net_free_charge=slab.get_required_net_free_charge())
