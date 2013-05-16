@@ -31,7 +31,7 @@ mat_properties = {
         'val_offset': -0.1, # offset in eV of the valence band from some reference state
         'condmass': 1.,     # effective mass in the conduction, in units of m0
         'valmass':  1.,     # effective mass in the valence, in units of m0
-        'eps': 14.,         # relative dielectric constant
+        'eps': 10.,         # relative dielectric constant
         'ndoping': 0.#-5.e5,      # the doping linear density, in e/cm
         },
     'shell': {
@@ -39,7 +39,7 @@ mat_properties = {
         'val_offset': -4.,  # offset in eV of the valence band from some reference state
         'condmass': 1.,     # effective mass in the conduction, in units of m0
         'valmass':  1.,     # effective mass in the valence, in units of m0
-        'eps': 8.,          # relative dielectric constant
+        'eps': 10.,          # relative dielectric constant
         'ndoping': 0.,      # the doping linear density, in e/cm
         },
     'n_deltadoping': {
@@ -659,9 +659,13 @@ if __name__ == "__main__":
     plot(slab.get_xgrid(), hole_density,label='h')
     #    plot(slab.get_xgrid(), slab._epsilon)
     legend()
-    
+
     xlabel("x (ang)")
     ylabel("el/hole density")
+    
+    figure(3)
+    plot(slab.get_xgrid(), slab.get_V() + slab._slope*slab.get_xgrid())
+
     show()
     
     
