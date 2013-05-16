@@ -181,11 +181,18 @@ subroutine v_of_rho_periodic(v,x,lambda,eps,n)
      end do
   end do
 
+! printing of the electric field for debug purposes
+!  do i=1,n
+!     write(77,*) x(i), efield(i)
+!  end do
+!  write(77,*) ""
+
   do i=1, n
      do j=1, i-1
      ! v is the integral of efield (times e); I set to zero at left edge
      ! here it is e * V/angstrom * angstrom = eV
-     v(i) = v(i) + efield(j) * (x(i) - x(j))
+     ! (x2-x1) is the delta x for an uniformly spaced grid
+     v(i) = v(i) + efield(j) * (x(2)-x(1))
      end do
   end do
 

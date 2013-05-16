@@ -31,22 +31,22 @@ mat_properties = {
         'val_offset': -0.1, # offset in eV of the valence band from some reference state
         'condmass': 1.,     # effective mass in the conduction, in units of m0
         'valmass':  1.,     # effective mass in the valence, in units of m0
-        'eps': 10.,         # relative dielectric constant
-        'ndoping': 0.#-5.e5,      # the doping linear density, in e/cm
+        'eps': 14.,         # relative dielectric constant
+        'ndoping': 0.       # the doping linear density, in e/cm
         },
     'shell': {
         'gap': 9.,          # gap, in eV
         'val_offset': -4.,  # offset in eV of the valence band from some reference state
         'condmass': 1.,     # effective mass in the conduction, in units of m0
         'valmass':  1.,     # effective mass in the valence, in units of m0
-        'eps': 10.,          # relative dielectric constant
+        'eps': 10.,         # relative dielectric constant
         'ndoping': 0.,      # the doping linear density, in e/cm
         },
     'n_deltadoping': {
-        'ndoping': 3.e5,     # If a layer has thickness zero, only the doping needs to be defined
+        'ndoping': 1.e7,     # If a layer has thickness zero, only the doping needs to be defined
         },
     'p_deltadoping': {
-        'ndoping': -3.e5,     # If a layer has thickness zero, only the doping needs to be defined
+        'ndoping': -1.e7,     # If a layer has thickness zero, only the doping needs to be defined
         }
     }
 
@@ -78,11 +78,11 @@ layers_np = [
 # List of layers, and their thickness in angstrom
 # For periodic boundary conditions
 layers_p = [
-    ('mat1',5.),
+    ('mat1',12.),
     ('n_deltadoping',0.),
-    ('mat2',10.),
+    ('mat2',24.),
     ('p_deltadoping',0.),
-    ('mat1',5.),
+    ('mat1',12.),
     ]
 
 if is_periodic:
@@ -336,7 +336,7 @@ def find_efermi(c_states, v_states, c_mass_array, v_mass_array, npoints, target_
     """
     more_energy = 2. # in eV
     # TODO: we may want a precision also on the charge, not only on the energy
-    energy_precision = 1.e-6 # eV
+    energy_precision = 1.e-8 # eV
 
     all_states_energies = n.array([s[0] for s in c_states] + [s[0] for s in v_states])
     # I set the boundaries for the bisection algorithm; I could in principle
