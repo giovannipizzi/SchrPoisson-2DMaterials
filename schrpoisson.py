@@ -1,6 +1,8 @@
+#from __future__ import division
 import numpy as n
 import scipy
 import scipy.linalg
+
 
 #hbar^2/m0 in units of eV*ang*ang
 HBAR2OVERM0=7.61996163
@@ -30,7 +32,7 @@ mat_properties = {
         'condmass': 1.,     # effective mass in the conduction, in units of m0
         'valmass':  1.,     # effective mass in the valence, in units of m0
         'eps': 14.,         # relative dielectric constant
-        'ndoping': 0.,      # the doping linear density, in e/cm
+        'ndoping': 0.#-5.e5,      # the doping linear density, in e/cm
         },
     'shell': {
         'gap': 9.,          # gap, in eV
@@ -51,37 +53,42 @@ mat_properties = {
 
 # List of layers, and their thickness in angstrom
 # For non-periodic boundary conditions
-#layers = [
-#    #    ('shell',100.),
-#    ('mat1',10.),
-#    ('n_deltadoping',0.),
-#    ('mat2',10.),
-#    ('p_deltadoping',0.),
-#    ('mat1',10.),
-#    ('n_deltadoping',0.),
-#    ('mat2',10.),
-#    ('p_deltadoping',0.),
-#    ('mat1',10.),
-#    ('n_deltadoping',0.),
-#    ('mat2',10.),
-#    ('p_deltadoping',0.),
-#    ('mat1',10.),
-#    ('n_deltadoping',0.),
-#    ('mat2',10.),
-#    ('p_deltadoping',0.),
-#    ('mat1',10.),
-#    #    ('shell',100.),
-#    ]
+layers_np = [
+    ('shell',50.),
+    ('mat1',10.),
+    ('n_deltadoping',0.),
+    ('mat2',10.),
+    ('p_deltadoping',0.),
+    ('mat1',10.),
+    ('n_deltadoping',0.),
+    ('mat2',10.),
+    ('p_deltadoping',0.),
+    ('mat1',10.),
+    ('n_deltadoping',0.),
+    ('mat2',10.),
+    ('p_deltadoping',0.),
+    ('mat1',10.),
+    ('n_deltadoping',0.),
+    ('mat2',10.),
+    ('p_deltadoping',0.),
+    ('mat1',10.),
+    ('shell',50.),
+    ]
 
 # List of layers, and their thickness in angstrom
 # For periodic boundary conditions
-layers = [
+layers_p = [
     ('mat1',5.),
     ('n_deltadoping',0.),
     ('mat2',10.),
     ('p_deltadoping',0.),
     ('mat1',5.),
     ]
+
+if is_periodic:
+    layers = layers_p
+else:
+    layers = layers_np
 
 
 class Slab(object):
@@ -94,6 +101,7 @@ class Slab(object):
             raise ValueError("layers must have at least one layer")
 
         self.max_step_size = 1. # in eV
+        self._slope = 0. # in V/ang
 
         total_length = 0.
         # I create a list where each element is a tuple in the format
@@ -195,8 +203,8 @@ class Slab(object):
 
         V_conv_threshold = 1.e-4
 
-        free_electrons_density = get_electron_density(c_states, e_fermi, self._condmass)
-        free_holes_density = get_hole_density(v_states, e_fermi, self._valmass)
+        free_electrons_density = get_electron_density(c_states, e_fermi, self._condmass, self.npoints)
+        free_holes_density = get_hole_density(v_states, e_fermi, self._valmass, self.npoints)
 
         total_charge_density =  self._doping - free_electrons_density + free_holes_density
         if is_periodic:
@@ -207,8 +215,11 @@ class Slab(object):
                 self._xgrid, total_charge_density, self._epsilon)
 
         if zero_elfield:
-            slope = (new_V[-1] - new_V[0])/(self._xgrid[-1] - self._xgrid[0])
-            new_V -= slope*self._xgrid
+            # in V/ang
+            self._slope = (new_V[-1] - new_V[0])/(self._xgrid[-1] - self._xgrid[0])
+            new_V -= self._slope*self._xgrid
+        else:
+            self._slope = 0.
 
         step = new_V - self._V
         # The following introduces steps in the curve.. discard
@@ -222,11 +233,12 @@ class Slab(object):
         # If current_max_step_size < max_step_size, I just add 'step', i.e.
         # self._V becomes new_V.
         # Otherwise, I rescale such that the maximum movement is max_step_size, globally
-        self._V += step * min(self.max_step_size, current_max_step_size) / current_max_step_size
+        if current_max_step_size != 0:
+            self._V += step * min(self.max_step_size, current_max_step_size) / current_max_step_size
 
-        self.max_step_size *= 0.9
+        #        self.max_step_size *= 0.9
 
-        return abs(step).max() < V_conv_threshold
+        return current_max_step_size < V_conv_threshold
         
     def get_V(self):
         """
@@ -256,7 +268,7 @@ class Slab(object):
         """
         return self._valband + self._V
 
-def get_electron_density(c_states, e_fermi, c_mass_array):
+def get_electron_density(c_states, e_fermi, c_mass_array, npoints):
     """
     Fill subbands with a 1D dos, at T=0 (for now; T>0 requires numerical integration)
     The first index of c_states must be the state energy in eV
@@ -275,7 +287,7 @@ def get_electron_density(c_states, e_fermi, c_mass_array):
     # and D=sqrt(2) / pi / sqrt(HBAR2OVERM0) and will be in units of 1/ang/sqrt(eV)
     D = n.sqrt(2.) / n.pi / sqrt(HBAR2OVERM0)
 
-    el_density = 0.   
+    el_density = n.zeros(npoints)   
     for state_energy, state in c_states:
         if state_energy > e_fermi:
             continue
@@ -287,12 +299,13 @@ def get_electron_density(c_states, e_fermi, c_mass_array):
         # At T=0, integrating from E0 to Ef the DOS gives
         # D * meff * int_E0^Ef 1/(sqrt(E-E0)) dE =
         # D * meff * 2 * sqrt(Ef-E0)   [if Ef>E0, else zero]
-        el_density += D * averaged_eff_mass * 2. * sqrt(e_fermi - state_energy)
+        el_density += D * averaged_eff_mass * 2. * sqrt(e_fermi - state_energy) * (
+            state**2 / square_norm)
 
     # Up to now, el_density is in 1/ang; we want it in 1/cm
     return el_density * 1.e8
 
-def get_hole_density(v_states, e_fermi, v_mass_array):
+def get_hole_density(v_states, e_fermi, v_mass_array, npoints):
     """
     For all documentation and comments, see get_electron_density
     
@@ -302,7 +315,7 @@ def get_hole_density(v_states, e_fermi, v_mass_array):
     """
     D = n.sqrt(2.) / n.pi / sqrt(HBAR2OVERM0)
 
-    h_density = 0.   
+    h_density = n.zeros(npoints)  
     for state_energy, state in v_states:
         # Note that here the sign is opposite w.r.t. the conduction case
         if state_energy < e_fermi:
@@ -310,41 +323,44 @@ def get_hole_density(v_states, e_fermi, v_mass_array):
         square_norm = sum((state)**2)
         averaged_eff_mass = 1./(sum(state**2 / v_mass_array) / sqrt(square_norm))
 
-        h_density += D * averaged_eff_mass * 2. * sqrt(state_energy - e_fermi)
+        h_density += D * averaged_eff_mass * 2. * sqrt(state_energy - e_fermi) * (
+            state**2 / square_norm)
 
     return h_density * 1.e8
 
-def find_efermi(c_states, v_states, c_mass_array, v_mass_array, target_net_free_charge):
+def find_efermi(c_states, v_states, c_mass_array, v_mass_array, npoints, target_net_free_charge):
     """
     Pass the conduction and valence states (and energies), 
     the conduction and valence mass arrays, 
     and the net charge to be used as a target (positive means that we want holes than electrons)
     """
+    more_energy = 2. # in eV
     # TODO: we may want a precision also on the charge, not only on the energy
     energy_precision = 1.e-6 # eV
 
     all_states_energies = n.array([s[0] for s in c_states] + [s[0] for s in v_states])
     # I set the boundaries for the bisection algorithm; I could in principle
     # also extend these ranges
-    ef_l = all_states_energies.min()
-    ef_r = all_states_energies.max()
+    ef_l = all_states_energies.min()-more_energy
+    ef_r = all_states_energies.max()+more_energy
 
-    electrons_l = get_electron_density(c_states, ef_l, c_mass_array)
-    holes_l = get_hole_density(v_states, ef_l, v_mass_array)
-    electrons_r = get_electron_density(c_states, ef_r, c_mass_array)
-    holes_r = get_hole_density(v_states, ef_r, v_mass_array)
+    electrons_l = n.sum(get_electron_density(c_states, ef_l, c_mass_array,npoints))
+    holes_l = n.sum(get_hole_density(v_states, ef_l, v_mass_array, npoints))
+    electrons_r = n.sum(get_electron_density(c_states, ef_r, c_mass_array, npoints))
+    holes_r = n.sum(get_hole_density(v_states, ef_r, v_mass_array,npoints))
     
     net_l = holes_l - electrons_l
     net_r = holes_r - electrons_r
     if (net_l - target_net_free_charge) * (
         net_r - target_net_free_charge) > 0:
         raise ValueError("The net charge at the boundary of the bisection algorithm "
-                         "range has the same sign!")
+                         "range has the same sign! {}, {}, target={}; ef_l={}, ef_r={}".format(
+                             net_l, net_r, target_net_free_charge,ef_l, ef_r))
 
     while (ef_r - ef_l) > energy_precision:
         ef = (ef_l + ef_r)/2.
-        electrons = get_electron_density(c_states, ef, c_mass_array)
-        holes = get_hole_density(v_states, ef, v_mass_array)
+        electrons = n.sum(get_electron_density(c_states, ef, c_mass_array,npoints))
+        holes = n.sum(get_hole_density(v_states, ef, v_mass_array,npoints))
         net = holes - electrons
         if (net - target_net_free_charge) * (
           net_r - target_net_free_charge) > 0:
@@ -599,11 +615,15 @@ if __name__ == "__main__":
                 c_states = get_conduction_states_np(slab)   
                 v_states = get_valence_states_np(slab)
             
-            e_fermi = find_efermi(c_states, v_states, slab._condmass, slab._valmass, 
+            e_fermi = find_efermi(c_states, v_states, slab._condmass, slab._valmass,
+                                  npoints=slab.npoints,
                                   target_net_free_charge=slab.get_required_net_free_charge())
             print iteration, e_fermi
-            
-            converged = slab.update_V(c_states, v_states, e_fermi)
+
+            zero_elfield = is_periodic
+            converged = slab.update_V(c_states, v_states, e_fermi, zero_elfield=zero_elfield)
+            # slab._slope is in V/ang; the factor to bring it to V/cm
+            print 'Added E field: {} V/cm '.format(slab._slope * 1.e8) 
             if converged:
                 break
     except KeyboardInterrupt:
@@ -612,9 +632,11 @@ if __name__ == "__main__":
     if not converged:
         print "****** WARNING! Calculation not converged ********"
 
+    el_density = get_electron_density(c_states, e_fermi, slab._condmass, slab.npoints)
+    hole_density = get_hole_density(v_states, e_fermi, slab._valmass,slab.npoints)
     print 'required net free charge={}'.format(slab.get_required_net_free_charge())
-    print 'el. density: ', get_electron_density(c_states, e_fermi, slab._condmass)
-    print 'hole density:', get_hole_density(v_states, e_fermi, slab._valmass)
+    print 'int. el. density: ', n.sum(el_density)
+    print 'int. hole density:', n.sum(hole_density)
 
     plot(slab.get_xgrid(), slab.get_valence_profile(),'b',linewidth=2)
     plot(slab.get_xgrid(), slab.get_conduction_profile(),'r',linewidth=2)
@@ -622,17 +644,24 @@ if __name__ == "__main__":
     for w, v in c_states:
         plot(slab.get_xgrid(), w + zoom_factor * abs(v)**2,'r')
     for w, v in v_states:
-        plot(slab.get_xgrid(), w + zoom_factor * abs(v)**2,'b')
+        # Plot valence bands upside down
+        plot(slab.get_xgrid(), w - zoom_factor * abs(v)**2,'b')
     
     plot(slab.get_xgrid(), ones(slab.npoints) * e_fermi, '--')
     plot(slab.get_xgrid(), slab.get_V(),'k')
-
-    ## For debugging purposes
-    #plot(slab.get_xgrid(), slab._doping)
-    #plot(slab.get_xgrid(), slab._epsilon)
-    
     xlabel("x (ang)")
     ylabel("eV")
+
+    ## For debugging purposes
+    figure(2)
+    #    plot(slab.get_xgrid(), slab._doping,label='d')
+    plot(slab.get_xgrid(), el_density,label='e')
+    plot(slab.get_xgrid(), hole_density,label='h')
+    #    plot(slab.get_xgrid(), slab._epsilon)
+    legend()
+    
+    xlabel("x (ang)")
+    ylabel("el/hole density")
     show()
     
     
