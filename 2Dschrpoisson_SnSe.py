@@ -14,7 +14,7 @@ KbT = 0.005*13.6 #from Ry to eV
 beta_eV = 1./KbT
 
 #Strain. For now must aither be 0.03, 0.05 or 0.1
-strain = 0.1
+strain = 0.05
 
 #the lattice constant in the y direction
 b_lat = 4.288
@@ -31,7 +31,7 @@ elif strain == 0.1:
     strained_material = 'Strained_10_SnSe'
 
 #the list containg the mean slab length for computation
-list_of_length = n.array([46.284]) # can of course only contain 1 point
+list_of_length = n.array([63.2548]) # can of course only contain 1 point
 
 #Do you want a plot of the band and density profile at each step ?
 plot_step = False
@@ -481,7 +481,7 @@ def MV_smearing(E,beta,mu):
     return 0.5*scipy.special.erf(-beta*(E-mu)-1./n.sqrt(2)) + 1./n.sqrt(2.*n.pi)*n.exp(-(beta*(E-mu)+1./n.sqrt(2))**2) + 0.5
     
 
-def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_contribution = False):
+def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_contribution = False, avg_eff_mass = False):
     """
     Fill subbands with a 1D dos, at T=0 (for now; T>0 requires numerical integration)
     The first index of c_states must be the state energy in eV
@@ -491,6 +491,8 @@ def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_co
     degen is the array containing the degeneracy of each conduction band minimum  
 
     Return linear electron density, in e/cm
+    
+    if avg_eff_mass, an array containing the average effective mass for each state and the state energy is returned
     """
     # The 1D DOS is (including the factor of 2 for the spin):
     # g(E) = sqrt(2 * effmass)/(pi*hbar) * 1/sqrt(E-E0)
@@ -505,9 +507,13 @@ def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_co
     
     contrib = n.zeros(len(degen))    
     
+    avg_mass = np.zeros((1,3))
+    
     # All the conduction band minima have to be taken into account with the appropriate degeneracy
     for j in range(len(degen)) : #number of minima
         deg = degen[j]
+	if j > 0 and avg_eff_mass == True:
+	    avg_mass = n.append(avg_mass,[[0.,0.,0.]],axis=0) # so that bands are separated by a line of zeros
         for state_energy, state in c_states[j]:
 	    energy_range = 10. # eV, to be very safe
 	    
@@ -518,6 +524,8 @@ def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_co
             # Both state and c_mass_array should have the same length
             # NOT SURE: square_norm or sqrt(square_norm) ? AUGU : I'm pretty sure it's square_norm and I changed it
             averaged_eff_mass = 1./(sum(state**2 / c_mass_array[j]) / square_norm)
+	    if avg_eff_mass == True:
+		avg_mass = n.append(avg_mass,[[state_energy,state_energy-e_fermi,averaged_eff_mass]],axis=0)
 	    
 	    if not smearing and state_energy < e_fermi:
 		# At T=0, integrating from E0 to Ef the DOS gives
@@ -549,8 +557,10 @@ def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_co
     # Up to now, el_density is in 1/ang; we want it in 1/cm
     if band_contribution == False :
         return el_density * 1.e8
+    elif band_contribution == True and avg_eff_mass == False :
+        return el_density * 1.e8, contrib  * 1.e8
     else :
-        return el_density * 1.e8, contrib  * 1.e8 
+	return el_density * 1.e8, contrib  * 1.e8, avg_mass
 
 def update_doping(materials_props,material,doping):
     """
@@ -576,7 +586,7 @@ def get_energy_gap(c_states,v_states,c_degen,v_degen):
     #suppressing the first entries of the arrays
     return n.min(np.delete(all_cond_states_energies,0)) - n.max(np.delete(all_val_states_energies,0))
 
-def get_hole_density(v_states, e_fermi, v_mass_array, npoints, degen, band_contribution = False):
+def get_hole_density(v_states, e_fermi, v_mass_array, npoints, degen, band_contribution = False, avg_eff_mass = False):
     """
     For all documentation and comments, see get_electron_density
     
@@ -590,9 +600,13 @@ def get_hole_density(v_states, e_fermi, v_mass_array, npoints, degen, band_contr
     
     h_density = n.zeros(npoints)  
     
+    avg_mass = np.zeros((1,3))
+    
     contrib = n.zeros(len(degen))
     for j in range(len(degen)) :
         deg = degen[j]
+	if j > 0 and avg_eff_mass == True:
+	    avg_mass = n.append(avg_mass,[[0.,0.,0.]],axis=0) # so that bands are separated by a line of zeros
         for state_energy, state in v_states[j]:
 	    energy_range = 10. # eV to be extra safe
 	    
@@ -601,6 +615,9 @@ def get_hole_density(v_states, e_fermi, v_mass_array, npoints, degen, band_contr
             #    continue
             square_norm = sum((state)**2)
             averaged_eff_mass = 1./(sum(state**2 / v_mass_array[j]) / square_norm)
+	    if avg_eff_mass == True:
+		avg_mass = n.append(avg_mass,[[state_energy,state_energy-e_fermi,averaged_eff_mass]],axis=0)
+		
 	    if not smearing and state_energy > e_fermi:
 		h_density += deg * D * sqrt(averaged_eff_mass) * 2. * sqrt(state_energy - e_fermi) * (
 		    state**2 / square_norm)
@@ -636,9 +653,12 @@ def get_hole_density(v_states, e_fermi, v_mass_array, npoints, degen, band_contr
 		""" 
     if band_contribution == False :
         return h_density * 1.e8
-    else :
+    elif band_contribution == True and avg_eff_mass == False:
         return h_density * 1.e8, contrib * 1.e8
-        
+    else:
+	return  h_density * 1.e8, contrib * 1.e8, avg_mass
+    
+
 def find_efermi(c_states, v_states, c_mass_array, v_mass_array, c_degen, v_degen, npoints, target_net_free_charge):
     """
     Pass the conduction and valence states (and energies), 
@@ -1010,8 +1030,8 @@ def run_simulation(length1,length2, max_steps, material1, material2, b_lat, plot
     
     
     #should print all results at each step in files
-    el_density, el_contrib = get_electron_density(c_states, e_fermi, slab._conddosmass, slab.npoints, slab._conddegen, band_contribution = True)
-    hole_density, hole_contrib = get_hole_density(v_states, e_fermi, slab._valdosmass,slab.npoints, slab._valdegen, band_contribution = True)
+    el_density, el_contrib, avg_cond_mass = get_electron_density(c_states, e_fermi, slab._conddosmass, slab.npoints, slab._conddegen, band_contribution = True, avg_eff_mass = True)
+    hole_density, hole_contrib, avg_val_mass = get_hole_density(v_states, e_fermi, slab._valdosmass,slab.npoints, slab._valdegen, band_contribution = True, avg_eff_mass =True)
     tot_el_dens = n.sum(el_density)
     tot_hole_dens = n.sum(hole_density)
     tot_el_dens_2 = tot_el_dens * b_lat*1.e-8 # in units of e/unit cell, 
@@ -1104,9 +1124,10 @@ def run_simulation(length1,length2, max_steps, material1, material2, b_lat, plot
     print "Total time spent finding the Fermi level(s) : ", slab.get_computing_times()[1], " (s)"
     print "Total time spent computing the electronic states : ", slab.get_computing_times()[2] , " (s)"
     
-    #files saved in a subfolder        
-    np.savetxt('./'+step_folder+'/SnSe_strain'+str(100*strain)+'_leng'+str(mean_length)+'.txt',np.transpose(matrix),header='1: position (ang), 2: fermi energy (eV), the rest is simulation dependent but contains the band profiles, the states and their energies')
-    np.savetxt('./'+step_folder+'/SnSe_strain'+str(100*strain)+'_leng'+str(mean_length)+'_dens.txt', np.transpose([slab.get_xgrid(),el_density,hole_density,el_density* b_lat*1.e-8,hole_density* b_lat*1.e-8]),header='1: position (ang), 2: electron density (1/cm), 3: hole density (1/cm), 4: electron density (1/a), 5: hole density (1/a)')
+    #files saved in a subfolder  
+    np.savetxt('./'+step_folder+'/SnSe_strain'+str(100*strain)+'_leng'+str(mean_length)+'_average_masses.txt',np.append(avg_val_mass,avg_cond_mass,axis=0),header='#1 : state energy (eV), 2: state energy - e_fermi (eV), average DOS effective mass (units of m0) \n #bands are separated by a line of zeros' )      
+    np.savetxt('./'+step_folder+'/SnSe_strain'+str(100*strain)+'_leng'+str(mean_length)+'.txt',np.transpose(matrix),header='#1: position (ang), 2: fermi energy (eV), the rest is simulation dependent but contains the band profiles, the states and their energies')
+    np.savetxt('./'+step_folder+'/SnSe_strain'+str(100*strain)+'_leng'+str(mean_length)+'_dens.txt', np.transpose([slab.get_xgrid(),el_density,hole_density,el_density* b_lat*1.e-8,hole_density* b_lat*1.e-8]),header='#1: position (ang), 2: electron density (1/cm), 3: hole density (1/cm), 4: electron density (1/a), 5: hole density (1/a)')
     
     return [it, slab._finalV_check, slab._finalE_check, tot_el_dens, tot_hole_dens,i,j,delta_x,mean_length,tot_el_dens_2,tot_hole_dens_2, hole_contrib[0], hole_contrib[1], hole_contrib[2], el_contrib[0], el_contrib[1], \
                el_contrib[2], e_fermi ]
