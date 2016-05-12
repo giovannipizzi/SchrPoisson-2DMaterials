@@ -1,0 +1,65 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module schrpoisson_wire2 ! in 
+    interface  ! in :schrpoisson_wire2
+        subroutine v_wire_nonperiodic(x,lambda,potential) ! in :schrpoisson_wire2:schrpoisson_wire2.f90
+            double precision intent(in) :: x
+            double precision intent(in) :: lambda
+            double precision intent(out) :: potential
+        end subroutine v_wire_nonperiodic
+        subroutine v_array_wire_nonperiodic(coord,x,rho_in,potential,n) ! in :schrpoisson_wire2:schrpoisson_wire2.f90
+            double precision intent(in) :: coord
+            double precision dimension(n),intent(in) :: x
+            double precision dimension(n),intent(in),depend(n) :: rho_in
+            double precision intent(out) :: potential
+            integer, optional,intent(in),check(len(x)>=n),depend(x) :: n=len(x)
+        end subroutine v_array_wire_nonperiodic
+        subroutine full_v_array_wire_nonperiodic(x,rho_in,potential,n) ! in :schrpoisson_wire2:schrpoisson_wire2.f90
+            double precision dimension(n),intent(in) :: x
+            double precision dimension(n),intent(in),depend(n) :: rho_in
+            double precision dimension(n),intent(out),depend(n) :: potential
+            integer, optional,intent(in),check(len(x)>=n),depend(x) :: n=len(x)
+        end subroutine full_v_array_wire_nonperiodic
+        subroutine nonperiodic_recursive_poisson(x,rho_in,alpha,max_iteration,potential,rho_out,n) ! in :schrpoisson_wire2:schrpoisson_wire2.f90
+            double precision dimension(n),intent(in) :: x
+            double precision dimension(n),intent(in),depend(n) :: rho_in
+            double precision dimension(n),intent(in),depend(n) :: alpha
+            integer intent(in) :: max_iteration
+            double precision dimension(n),intent(out),depend(n) :: potential
+            double precision dimension(n),intent(out),depend(n) :: rho_out
+            integer, optional,intent(in),check(len(x)>=n),depend(x) :: n=len(x)
+        end subroutine nonperiodic_recursive_poisson
+        subroutine v_wire_periodic(x,lambda,potential,period) ! in :schrpoisson_wire2:schrpoisson_wire2.f90
+            double precision intent(in) :: x
+            double precision intent(in) :: lambda
+            double precision intent(out) :: potential
+            double precision intent(in) :: period
+        end subroutine v_wire_periodic
+        subroutine v_array_wire_periodic(coord,x,rho_in,potential,n) ! in :schrpoisson_wire2:schrpoisson_wire2.f90
+            double precision intent(in) :: coord
+            double precision dimension(n),intent(in) :: x
+            double precision dimension(n),intent(in),depend(n) :: rho_in
+            double precision intent(out) :: potential
+            integer, optional,intent(in),check(len(x)>=n),depend(x) :: n=len(x)
+        end subroutine v_array_wire_periodic
+        subroutine full_v_array_wire_periodic(x,rho_in,potential,n) ! in :schrpoisson_wire2:schrpoisson_wire2.f90
+            double precision dimension(n),intent(in) :: x
+            double precision dimension(n),intent(in),depend(n) :: rho_in
+            double precision dimension(n),intent(out),depend(n) :: potential
+            integer, optional,intent(in),check(len(x)>=n),depend(x) :: n=len(x)
+        end subroutine full_v_array_wire_periodic
+        subroutine periodic_recursive_poisson(x,rho_in,alpha,max_iteration,potential,rho_out,n) ! in :schrpoisson_wire2:schrpoisson_wire2.f90
+            double precision dimension(n),intent(in) :: x
+            double precision dimension(n),intent(in),depend(n) :: rho_in
+            double precision dimension(n),intent(in),depend(n) :: alpha
+            integer intent(in) :: max_iteration
+            double precision dimension(n),intent(out),depend(n) :: potential
+            double precision dimension(n),intent(out),depend(n) :: rho_out
+            integer, optional,intent(in),check(len(x)>=n),depend(x) :: n=len(x)
+        end subroutine periodic_recursive_poisson
+    end interface 
+end python module schrpoisson_wire2
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/
