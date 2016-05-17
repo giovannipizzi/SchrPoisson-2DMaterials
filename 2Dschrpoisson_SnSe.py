@@ -4,6 +4,7 @@ import scipy.linalg
 import time
 import scipy.special
 import os
+from operator import add
 
 #Simulation specific parameters
 #================================================================================================================
@@ -14,7 +15,10 @@ KbT = 0.005*13.6 #from Ry to eV
 beta_eV = 1./KbT
 
 #Strain. For now must aither be 0.03, 0.05 or 0.1
-strain = 0.05
+strain = 0.1
+
+#lattice_constant in the x direction
+a_lat = 4.408
 
 #the lattice constant in the y direction
 b_lat = 4.288
@@ -31,10 +35,13 @@ elif strain == 0.1:
     strained_material = 'Strained_10_SnSe'
 
 #the list containg the mean slab length for computation
-list_of_length = n.array([63.2548]) # can of course only contain 1 point
+list_of_length = n.array([46.284]) # can of course only contain 1 point
 
 #Do you want a plot of the band and density profile at each step ?
 plot_step = False
+
+#Run finer simulation with a "mean" material over one lattice cell at the interfaces ?
+finer_simulation = True
 
 #folder where the detailed data of each step is printed
 step_folder = "simulation_steps_data"
@@ -470,8 +477,34 @@ class Slab(object):
         val_max = np.max(valence)
         
         return cond_min - val_max
-        
 
+def add_intermediate_material_prop(material1,material2):
+    """
+    Since the interface between two materials is not necesserly well defined, one might need an "averaged zone".
+    
+    This function adds new_materials properties to the list of material properties under the name that is returned
+    """        
+    
+    avg_mat = mat_properties[material1].copy()
+    
+    
+    # looping over the dictionary and averaging
+    
+    for key in avg_mat:
+	if "mass" in key: #must average inverse masses
+	    avg_mat[key] = 2./(1./np.array(mat_properties[material1][key])+1./np.array(mat_properties[material2][key]))
+	else :
+	    avg_mat[key] = 0.5 * (np.array(mat_properties[material1][key]) + np.array(mat_properties[material2][key]))
+    
+    name = material1+material2
+    
+    mat_properties[name] = avg_mat
+    
+    return name
+    
+
+    
+    
 def MV_smearing(E,beta,mu):
     """
     Marzari Vanderbilt smearing function to be integrated in conjuction with the density of states
@@ -1132,9 +1165,189 @@ def run_simulation(length1,length2, max_steps, material1, material2, b_lat, plot
     return [it, slab._finalV_check, slab._finalE_check, tot_el_dens, tot_hole_dens,i,j,delta_x,mean_length,tot_el_dens_2,tot_hole_dens_2, hole_contrib[0], hole_contrib[1], hole_contrib[2], el_contrib[0], el_contrib[1], \
                el_contrib[2], e_fermi ]
 
+
+def run_finer_simulation(length1,length2, max_steps, material1, material2, a_lat, b_lat, plot_step = False) :
+    """
+    This function launches the self/consistant Schroedinger-Poisson calculations and returns all the relevant data
+    
+    material1 and material2 are strings that indicate which material to choose from the dictionary
+    
+    Note : only used for periodic systems with delta-doping
+    
+    a_lat is the unstrained lattice parameter along x
+    """ 
+    
+    strained_a_lat = a_lat*(1+strain)
+    
+    int_mat = add_intermediate_material_prop(material1,material2)
+    
+    it = 0
+    mean_length = 0.5*(length1+length2)
+    print 'Mean slab length : ', mean_length
+    layers_p = [
+    (material1,0.5*(length1-a_lat)),
+    (int_mat, 0.5*a_lat),
+    ('n_deltadoping',0.0),
+    (int_mat,0.5*strained_a_lat),
+    (material2,length2-strained_a_lat),
+    (int_mat,0.5*strained_a_lat),
+    ('p_deltadoping',0.0),
+    (int_mat, 0.5*a_lat),
+    (material1,0.5*(length1-a_lat)),
+    ]
+    
+    slab = Slab(layers_p)
+    
+    # I don't want the terminal to be flooded with every single step
+    import sys
+    import os
+    
+    sys.stdout = open(os.devnull, "w")
+    
+    try:
+        converged = False
+        for iteration in range(max_steps):
+            print 'starting iteration {}...'.format(iteration)
+            it += 1
+	    start_t = time.time()
+            if is_periodic:
+                c_states = get_conduction_states_p(slab)   
+                v_states = get_valence_states_p(slab)
+            else:
+                c_states = get_conduction_states_np(slab)   
+                v_states = get_valence_states_np(slab)
+            end_t = time.time()
+	    slab.update_computing_times("Hami", end_t-start_t)
+	    
+	    start_t = time.time()
+            e_fermi = find_efermi(c_states, v_states, slab._conddosmass, slab._valdosmass,
+                                  slab._conddegen, slab._valdegen, npoints=slab.npoints,
+                                  target_net_free_charge=slab.get_required_net_free_charge())
+	    end_t = time.time()
+	    slab.update_computing_times("Fermi", end_t-start_t)
+            print iteration, e_fermi
+
+            zero_elfield = is_periodic
+            converged = slab.update_V(c_states, v_states, e_fermi, zero_elfield=zero_elfield)
+            # slab._slope is in V/ang; the factor to bring it to V/cm
+            print 'Added E field: {} V/cm '.format(slab._slope * 1.e8) 
+            if converged:
+                break
+    except KeyboardInterrupt:
+        pass
+    sys.stdout = sys.__stdout__
+    if not converged:
+        print "****** WARNING! Calculation not converged ********"    
+    
+    
+    #should print all results at each step in files
+    el_density, el_contrib, avg_cond_mass = get_electron_density(c_states, e_fermi, slab._conddosmass, slab.npoints, slab._conddegen, band_contribution = True, avg_eff_mass = True)
+    hole_density, hole_contrib, avg_val_mass = get_hole_density(v_states, e_fermi, slab._valdosmass,slab.npoints, slab._valdegen, band_contribution = True, avg_eff_mass =True)
+    tot_el_dens = n.sum(el_density)
+    tot_hole_dens = n.sum(hole_density)
+    tot_el_dens_2 = tot_el_dens * b_lat*1.e-8 # in units of e/unit cell, 
+    tot_hole_dens_2 = tot_hole_dens * b_lat*1.e-8 # in units of e/unit cell
+    
+    #contribution in %
+    if tot_el_dens != 0 : 
+        el_contrib /= tot_el_dens
+    if tot_hole_dens != 0 :    
+        hole_contrib /= tot_hole_dens
+	print "El contrib : ", el_contrib
+	print "Hole contrib : ", hole_contrib
+    matrix = [slab.get_xgrid(),ones(slab.npoints) * e_fermi]
+    zoom_factor = 10. # To plot eigenstates
+		
+    i=0
+    j=0
+    for k in range(slab._ncond_min) :
+        matrix.append(slab.get_conduction_profile()[k])
+        for w, v in c_states[k]:
+            matrix.append(w + zoom_factor * abs(v)**2)
+            matrix.append(ones(slab.npoints) * w)
+            i+=1
+    for l in range(slab._nval_max):        
+        matrix.append(slab.get_valence_profile()[l])
+        for w, v in v_states[l]:
+            # Plot valence bands upside down
+            matrix.append(w - zoom_factor * abs(v)**2)
+            matrix.append(ones(slab.npoints) * w)
+            j+= 1
+    
+    if plot_step == True :
+
+	# Plotting each band and corresponding states in a matching color
+	plot(slab.get_xgrid(), slab.get_conduction_profile()[0],'r',linewidth=2)
+
+	for w, v in c_states[0]:
+	   plot(slab.get_xgrid(), w + zoom_factor * abs(v)**2,'r')     
+	 
+	plot(slab.get_xgrid(), slab.get_conduction_profile()[1],'g',linewidth=2)
+    
+	for w, v in c_states[1]:
+	   plot(slab.get_xgrid(), w + zoom_factor * abs(v)**2,'g')
+	    
+	plot(slab.get_xgrid(), slab.get_conduction_profile()[2],'m',linewidth=2)
+    
+	for w, v in c_states[2]:
+	   plot(slab.get_xgrid(), w + zoom_factor * abs(v)**2,'m')   
+	    
+	       
+	 
+	plot(slab.get_xgrid(), slab.get_valence_profile()[0],'b',linewidth=2)
+		
+	for w, v in v_states[0]:
+		    # Plot valence bands upside down
+	    plot(slab.get_xgrid(), w - zoom_factor * abs(v)**2,'b')     
+	
+	plot(slab.get_xgrid(), slab.get_valence_profile()[1],'c',linewidth=2)
+		
+	for w, v in v_states[1]:
+		    # Plot valence bands upside down
+	    plot(slab.get_xgrid(), w - zoom_factor * abs(v)**2,'c')    
+	    
+	plot(slab.get_xgrid(), slab.get_valence_profile()[2],'y',linewidth=2)
+		
+	for w, v in v_states[1]:
+		    # Plot valence bands upside down
+	    plot(slab.get_xgrid(), w - zoom_factor * abs(v)**2,'y')    
+		    
+	
+	plot(slab.get_xgrid(), ones(slab.npoints) * e_fermi, 'k--')
+	xlabel("x (ang)")
+	ylabel("eV")
+	
+	# density profile plot
+	
+	figure(2)
+	plot(slab.get_xgrid(), el_density,label='e')
+	plot(slab.get_xgrid(), hole_density,label='h')
+
+	legend()
+    
+	xlabel("x (ang)")
+	ylabel("el/hole density (1/cm)")
+	
+	show()
+    
+    #Keeping the user aware of the time spend on each main task
+    print "Total time spent solving Poisson equation : ", slab.get_computing_times()[0], " (s)"
+    print "Total time spent finding the Fermi level(s) : ", slab.get_computing_times()[1], " (s)"
+    print "Total time spent computing the electronic states : ", slab.get_computing_times()[2] , " (s)"
+    
+    #files saved in a subfolder  
+    np.savetxt('./'+step_folder+'/SnSe_strain'+str(100*strain)+'_leng'+str(mean_length)+'_average_masses_finer.txt',np.append(avg_val_mass,avg_cond_mass,axis=0),header='#1 : state energy (eV), 2: state energy - e_fermi (eV), average DOS effective mass (units of m0) \n #bands are separated by a line of zeros' )      
+    np.savetxt('./'+step_folder+'/SnSe_strain'+str(100*strain)+'_leng'+str(mean_length)+'_finer.txt',np.transpose(matrix),header='#1: position (ang), 2: fermi energy (eV), the rest is simulation dependent but contains the band profiles, the states and their energies')
+    np.savetxt('./'+step_folder+'/SnSe_strain'+str(100*strain)+'_leng'+str(mean_length)+'_dens_finer.txt', np.transpose([slab.get_xgrid(),el_density,hole_density,el_density* b_lat*1.e-8,hole_density* b_lat*1.e-8]),header='#1: position (ang), 2: electron density (1/cm), 3: hole density (1/cm), 4: electron density (1/a), 5: hole density (1/a)')
+    
+    return [it, slab._finalV_check, slab._finalE_check, tot_el_dens, tot_hole_dens,i,j,delta_x,mean_length,tot_el_dens_2,tot_hole_dens_2, hole_contrib[0], hole_contrib[1], hole_contrib[2], el_contrib[0], el_contrib[1], \
+               el_contrib[2], e_fermi ]
+	       
+	       
 if __name__ == "__main__":
     from pylab import *
     
+
     num = list_of_length.size
     matrix = n.zeros((18,num))
     i = 0
@@ -1154,8 +1367,11 @@ if __name__ == "__main__":
 	leng1 = 2*leng/(2+strain) #unstrained length
 	leng2 = 2*leng*((1+strain)/(2+strain))
 	#print leng1,leng2,leng1+leng2-2*leng
-
-        res = run_simulation(leng1,leng2, 2000,'SnSe',strained_material,b_lat,plot_step)
+	
+	if not finer_simulation :
+	    res = run_simulation(leng1,leng2, 2000,'SnSe',strained_material,b_lat,plot_step)
+	else :
+	    res = run_finer_simulation(leng1,leng2, 2000,'SnSe',strained_material,a_lat,b_lat,plot_step)
         print res
         matrix[:,i] = res
 	i += 1
@@ -1165,6 +1381,6 @@ if __name__ == "__main__":
         14: contribution of Gamma-Y val band max, 15: contributioon of Gamma cond band min, 16: contributioon of Gamma-X cond band min, 17: contributioon of Gamma-Y cond band min,  18: fermi energy (eV) ')
     
     
-   
+
     
 
