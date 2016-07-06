@@ -1,0 +1,28 @@
+{
+          "nb_of_states_per_band": 2, 
+          "plot_res": true, 
+          "smearing": true, 
+          "out_dir": "single_point_output", 
+          "calculation": "single_point", 
+          "delta_x": 0.5, 
+          "setup": {
+                    "slab1": {
+                              "polarization": "positive", 
+                              "strain": 0.0, 
+                              "width": 15.0
+                    }, 
+                    "slab3": {
+                              "polarization": "positive", 
+                              "strain": 0.0, 
+                              "width": 15.0
+                    }, 
+                    "slab2": {
+                              "polarization": "positive", 
+                              "strain": 0.08, 
+                              "width": 30.0
+                    }
+          }, 
+          "max_iteration": 1000, 
+          "plot_fit": true, 
+          "KbT": 0.005
+}

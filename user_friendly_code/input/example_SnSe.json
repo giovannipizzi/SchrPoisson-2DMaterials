@@ -1,0 +1,294 @@
+{"0.00": { "alpha_xx": 10.22,
+	   "x_lat": 4.408,
+	   "y_lat": 4.288,
+	   "polarization_charge": 0.0,
+	   "vacuum_level": 3.471695,
+	   "valence_gamma": {"energy": -1.508255819,
+			     "conf_mass": 1.755925079,
+			     "DOS_mass": 2.7330924,
+			     "degeneracy": 1
+			     },
+	   "valence_gamma-X": {"energy": -0.8832657543,
+			       "conf_mass": 0.125168454,
+			       "DOS_mass": 0.159070572,
+			       "degeneracy": 2
+			      },
+	   "valence_gamma-Y": {"energy": -1.064317364,
+			       "conf_mass": 0.109554071,
+			       "DOS_mass": 0.159511425,
+			       "degeneracy": 2
+			      },
+	   "conduction_gamma": {"energy": 0.6090962485,
+				"conf_mass": 2.741100107,
+				"DOS_mass": 2.994158008,
+			        "degeneracy": 1
+			       },
+	   "conduction_gamma-X": {"energy": 0.0902128713,
+				  "conf_mass": 0.110807373,
+				  "DOS_mass": 0.190387132,
+			          "degeneracy": 2
+				 },
+	   "conduction_gamma-Y": {"energy": 0.05720314215,
+				  "conf_mass": 0.131542031,
+				  "DOS_mass": 0.130378261,
+			          "degeneracy": 2
+				 }
+	 },
+
+"0.005": { "alpha_xx":  9.85,
+	   "polarization_charge": 0.0296,
+	   "vacuum_level": 3.456272,
+	   "valence_gamma": {"energy": -1.53133791,
+			     "conf_mass": 1.663041043,
+			     "DOS_mass": 2.721339909,
+			     "degeneracy": 1
+			     },
+	   "valence_gamma-X": {"energy": -0.9222633399,
+			       "conf_mass": 0.128689309,
+			       "DOS_mass": 0.173073867,
+			       "degeneracy": 2
+			      },
+	   "valence_gamma-Y": {"energy": -1.129934252,
+			       "conf_mass": 0.11396212,
+			       "DOS_mass": 0.169760624,
+			       "degeneracy": 2
+			      },
+	   "conduction_gamma": {"energy": 0.5952654761,
+				"conf_mass": 2.57832201,
+				"DOS_mass": 2.822577572,
+			        "degeneracy": 1
+			       },
+	   "conduction_gamma-X": {"energy": 0.07651969791,
+				  "conf_mass": 0.113872233,
+				  "DOS_mass": 0.195572846,
+			          "degeneracy": 2
+				 },
+	   "conduction_gamma-Y": {"energy": 0.03308521035,
+				  "conf_mass": 0.134383779,
+				  "DOS_mass": 0.136358334,
+			          "degeneracy": 2
+				 }
+},
+
+"0.01": {  "alpha_xx":  9.43,
+	   "polarization_charge": 0.06357,
+	   "vacuum_level": 3.4408595,
+	   "valence_gamma": {"energy": -1.54984677,
+			     "conf_mass": 1.56510041,
+			     "DOS_mass": 2.70985957,
+			     "degeneracy": 1
+			     },
+	   "valence_gamma-X": {"energy": -0.964184483,
+			       "conf_mass": 0.13291259,
+			       "DOS_mass": 0.191355,
+			       "degeneracy": 2
+			      },
+	   "valence_gamma-Y": {"energy": -1.198008621,
+			       "conf_mass": 0.11936355,
+			       "DOS_mass": 0.18232315,
+			       "degeneracy": 2
+			      },
+	   "conduction_gamma": {"energy": 0.5788854169,
+				"conf_mass": 2.38658757,
+				"DOS_mass": 2.66126322,
+			       "degeneracy": 1
+			       },
+	   "conduction_gamma-X": {"energy": 0.06282279948,
+				  "conf_mass": 0.117584668,
+				  "DOS_mass": 0.20252247,
+			          "degeneracy": 2
+				 },
+	   "conduction_gamma-Y": {"energy": 0.01621894616,
+				  "conf_mass": 0.137705331,
+				  "DOS_mass": 0.143839918,
+			          "degeneracy": 2
+				 }
+},
+
+"0.02": {  "alpha_xx":  8.72,
+	   "polarization_charge": 0.11891,
+	   "vacuum_level": 3.410004,
+	   "valence_gamma": {"energy": -1.583450641,
+			     "conf_mass": 1.40051948,
+			     "DOS_mass": 2.67225557,
+			     "degeneracy": 1
+			     },
+	   "valence_gamma-X": {"energy": -1.045768622,
+			       "conf_mass": 0.14100755,
+			       "DOS_mass": 0.2300136,
+			       "degeneracy": 2
+			      },
+	   "valence_gamma-Y": {"energy": -1.327934106,
+			       "conf_mass": 0.13038359,
+			       "DOS_mass": 0.20888013,
+			       "degeneracy": 2
+			      },
+	   "conduction_gamma": {"energy": 0.5447153404,
+				"conf_mass": 2.06012306,
+				"DOS_mass": 2.38326798 ,
+			        "degeneracy": 1
+			       },
+	   "conduction_gamma-X": {"energy": 0.03485110389,
+				  "conf_mass": 0.12474613,
+				  "DOS_mass": 0.21078401,
+			          "degeneracy": 2
+				 },
+	   "conduction_gamma-Y": {"energy": -0.01832626876,
+				  "conf_mass": 0.14426449,
+				  "DOS_mass": 0.15912479,
+			          "degeneracy": 2
+				 }
+},
+
+ "0.03": { "alpha_xx": 8.09 ,
+	   "polarization_charge": 0.16841,
+	   "vacuum_level": 3.379291,
+	   "valence_gamma": {"energy": -1.612715343,
+			     "conf_mass": 1.263123841,
+			     "DOS_mass": 2.605644013,
+			     "degeneracy": 1
+			     },
+	   "valence_gamma-X": {"energy": -1.126632618,
+			       "conf_mass": 0.149332816,
+			       "DOS_mass": 0.277787287,
+			       "degeneracy": 2
+			      },
+	   "valence_gamma-Y": {"energy": -1.452978814,
+			       "conf_mass": 0.142663316,
+			       "DOS_mass": 0.240072437,
+			       "degeneracy": 2
+			      },
+	   "conduction_gamma": {"energy": 0.5081724308,
+				"conf_mass": 1.790638381,
+				"DOS_mass": 2.160064868,
+			        "degeneracy": 1
+			       },
+	   "conduction_gamma-X": {"energy": 0.006267565118,
+				  "conf_mass": 0.132135785,
+				  "DOS_mass": 0.215656479,
+			          "degeneracy": 2
+				 },
+	   "conduction_gamma-Y": {"energy": -0.04715859297,
+				  "conf_mass": 0.151474703,
+				  "DOS_mass": 0.175190321,
+			          "degeneracy": 2
+				 }
+},
+ "0.05": { "alpha_xx":  7.095 ,
+	   "polarization_charge":0.24717 ,
+	   "vacuum_level":  3.32065 ,
+	   "valence_gamma": {"energy": -1.681631988 ,
+			     "conf_mass": 1.072817073,
+			     "DOS_mass": 2.5963443,
+			     "degeneracy": 1
+			     },
+	   "valence_gamma-X": {"energy": -1.280191143,
+			       "conf_mass": 0.164708046,
+			       "DOS_mass": 0.396728963,
+			       "degeneracy": 2
+			      },
+	   "valence_gamma-Y": {"energy": -1.68006704,
+			       "conf_mass": 0.170014663,
+			       "DOS_mass": 0.314896267,
+			       "degeneracy": 2
+			      },
+	   "conduction_gamma": {"energy": 0.4463150272,
+				"conf_mass": 1.447647577,
+				"DOS_mass": 1.901549047 ,
+			        "degeneracy": 1
+			       },
+	   "conduction_gamma-X": {"energy": -0.05585999649,
+				  "conf_mass": 0.14613408,
+				  "DOS_mass": 0.218672266,
+			          "degeneracy": 2
+				 },
+	   "conduction_gamma-Y": {"energy": -0.102949999,
+				  "conf_mass": 0.165506803,
+				  "DOS_mass": 0.209513646,
+			          "degeneracy": 2
+				 }
+},
+
+"0.08": {  "alpha_xx":  6.01,
+	   "polarization_charge": 0.33786,
+	   "vacuum_level": 3.2381,
+	   "valence_gamma": {"energy": -1.783486418,
+			     "conf_mass": 0.88431548,
+			     "DOS_mass": 2.63329499,
+			     "degeneracy": 1
+			     },
+	   "valence_gamma-X": {"energy": -1.506082111,
+			       "conf_mass": 0.1889064,
+			       "DOS_mass": 0.70594724,
+			       "degeneracy": 2
+			      },
+	   "valence_gamma-Y": {"energy": -1.98322238,
+			       "conf_mass": 0.2237838 ,
+			       "DOS_mass": 0.49109903,
+			       "degeneracy": 2
+			      },
+	   "conduction_gamma": {"energy":0.3551967803 ,
+				"conf_mass": 1.12017275 ,
+				"DOS_mass": 1.67674939 ,
+			        "degeneracy": 1
+			       },
+	   "conduction_gamma-X": {"energy": -0.1566417586,
+				  "conf_mass": 0.16781404,
+				  "DOS_mass": 0.21609692,
+			          "degeneracy": 2
+				 },
+	   "conduction_gamma-Y": {"energy": -0.1736955906,
+				  "conf_mass": 0.18901693,
+				  "DOS_mass": 0.27047992,
+			          "degeneracy": 2
+				 }
+},
+
+ "0.10": { "epsilon_xx" : 4.390845042,
+	   "epsilon_yy": 4.609306158,
+	   "alpha_xx":  5.40,
+	   "alpha_yy":  5.74 ,
+	   "polarization": -0.1774925,
+	   "polarization_mod": 0.3733465,
+	   "polarization_units": "C/m^2",
+	   "polarization_charge": 0.38643,
+	   "vacuum_level":  3.183275,
+	   "band_gap": 1.425,
+	   "valence_gamma": {"energy": -1.846872487,
+			     "position": [0.0,0.0],
+			     "conf_mass": 0.804425486,
+			     "DOS_mass": 2.747762669,
+			     "degeneracy": 1
+			     },
+	   "valence_gamma-X": {"energy": -1.639183729,
+			       "position": [0.5126292283,0.0],
+			       "conf_mass": 0.205658144,
+			       "DOS_mass": 1.059071873,
+			       "degeneracy": 2
+			      },
+	   "valence_gamma-Y": {"energy": -2.150722701,
+			       "position": [0.0,0.5741904823],
+			       "conf_mass": 0.271355674,
+			       "DOS_mass": 0.688994731,
+			       "degeneracy": 2
+			      },
+	   "conduction_gamma": {"energy": 0.3081798586,
+				"position": [0.0,0.0],
+				"conf_mass": 0.98472771,
+				"DOS_mass": 1.593144026,
+			        "degeneracy": 1
+			       },
+	   "conduction_gamma-X": {"energy": -0.2144276807,
+				  "position": [0.5231571587,0.0],
+				  "conf_mass": 0.182798895,
+				  "DOS_mass": 0.213362934,
+			          "degeneracy": 2
+				 },
+	   "conduction_gamma-Y": {"energy": -0.205542465 ,
+				  "position": [0.0,0.6099056797],
+				  "conf_mass": 0.205831494,
+				  "DOS_mass": 0.3196511,
+			          "degeneracy": 2
+				 }
+}
+}
