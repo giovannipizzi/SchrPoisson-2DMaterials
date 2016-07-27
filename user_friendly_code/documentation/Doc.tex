@@ -48,9 +48,9 @@ This code aims at self-consistently solving the coupled Schroedinger-Poisson equ
 
 Two types of calculations can be made: single-point or map. The former precisely simulates a specific setup described in an input file to produce a band or a carrier density profile. This is a useful tool for experiments as it allows to simulated any strain profile (almost continuously). The map calculation screens over different setups of strained/unstrained material to investigate insulator to conductor phase transitions.\\
 
-This code uses a multi-scale approach, meaning that the materials properties must come from DFT calculations. The user has to provide vital quantities such as effective masses and polarization charges  for different strains. The properties for at least 4-5 strains should be provided for accurate fitting. It is also not recommended to simulate strains larger than those coming from DFT, as the trends could change.
+This code uses a multi-scale approach, meaning that the materials properties must come from DFT calculations. The user has to provide vital quantities such as effective masses and polarization charges  for different strains. The properties for at least 4-5 strains should be provided for accurate fitting. It is also not recommended to extrapolate strains larger than those coming from DFT, as the trends could change.
 
-\begin{figure} 
+\begin{figure} [h]
 \begin{center}
 \captionsetup{width=0.8\textwidth}
 \centerline{\includegraphics[width=12cm,angle=0]{example1.eps}}
@@ -61,18 +61,16 @@ This code uses a multi-scale approach, meaning that the materials properties mus
 
 
 \section{Setting up the code}
-The code itself is contained in 3 files: \texttt{2Dschrpoisson.py}, \texttt{schrpoisson\_wire2.f90} and \texttt{Makefile}. The bulk of the numerical part being written in FORTRAN, some steps must be taken before using the code. Firstly, the Python-Fortran interface must be created using \texttt{f2py} in the code folder:\\
+The code itself is contained in 4 files: \texttt{2Dschrpoisson.py}, \texttt{schrpoisson\_wire2.f90}, \texttt{schrpoisson\_wire2.pyf} and \texttt{Makefile}. The bulk of the numerical part being written in FORTRAN, one must compile using the \texttt{make} command. The code is now ready to run using the following command in the code folder:\\
 
-\texttt{f2py -m schrpoisson\_wire2 -h schrpoisson\_wire2.pyf schrpoisson\_wire2.f90} \\
+\texttt{python 2Dschrpoisson.py \{material\_properties\}.json  \{calculation\_input\}.json}\\
 
-One must then compile using the \texttt{make} command. The code is now ready to run using the following command in the code folder:\\
-
-\texttt{python 2Dschrpoisson.py \{material\_properties\}.json  \{calculation\_input\}.json}
+\noindent Note that the Python path to the input json files must be provided.
 
 \section{Input}
-Two input files are necessary to evry calculation: one containing the materials properties and the other the calculation setup. All input files must be stored in the input folder.
+Two input files are necessary to every calculation: one containing the materials properties and the other the calculation setup. All input files must be stored in the input folder.
 \subsection{Materials Properties File}
-The file containing the properties of the material at different strains must be in the \texttt{json} format, in the form of a python dictionnary. The following example is taken from the SnSe\_example.json in the input folder. Note that the properties of the unstrained material are \textbf{mendatory} and must be given under the "0.00" key.\\
+The file containing the properties of the material at different strains must be in the \texttt{json} format, in the form of a python dictionary. The following example is taken from the SnSe\_example.json in the input folder. Note that the properties of the unstrained material are \textbf{mandatory} and must be given under the "0.00" key.\\
 
 \begin{tabbing}
 \{"0.00": \{ \= "alpha\_xx": 10.22,\\
@@ -125,9 +123,9 @@ The file containing the properties of the material at different strains must be 
 
 \item The "polarization\_charge" key: the polarization charge at the edge of the material in units of electron per unit cell width, \textit{i.e.} e/b.
 
-\item The "vacuum\_level" key: Self-explanatory, need to align energy levels across the setup (in eV).
+\item The "vacuum\_level" key: Self-explanatory, needed to align energy levels across the setup (in eV).
 
-\item The energy levels keys: They need to either contain the word \texttt{valence} or \texttt{conduction}, which is needed by the code. The assigned value is a subdictionary with the energy of the band extremun (eV), the confinement and density of states (DOS) masses (respectively effective masses in $x$ and $y$ direction) and the degeneracy of the energy level in the first BZ.
+\item The energy levels keys: They need to either contain the word \texttt{valence} or \texttt{conduction}, which is needed by the code. The assigned value is a subdictionary with the energy of the band extremum (eV), the confinement and density of states (DOS) masses (respectively effective masses in $x$ and $y$ direction) and the degeneracy of the energy level in the first BZ.
 
 \end{itemize}
 
@@ -141,7 +139,7 @@ Each type of calculation , single-point or map, has its own input file template.
           \>"calculation": "single\_point", \\
            \>"out\_dir": "single\_point\_output", \\
            \>"smearing": true, \\
-           \>"KbT": 0.005\\
+           \>"KbT": 0.005,\\
            \>"max\_iteration": 1000, \\
           \>"plot\_fit": false, \\
          \> "nb\_of\_states\_per\_band": 2, \\
@@ -186,7 +184,7 @@ Each type of calculation , single-point or map, has its own input file template.
 
 \item The "delta\_x" key: The size of the discretization step in space (\angstrom)
 
-\item The "setup" key: The assigned value is a subdictionary with the description of each slab forming the general setup. For each layer, one has to specify the "polarization" (positive or negative, positive if holes accumulate towards larger $x$), the "strain" of the material and the "width" of the slab (\angstrom). There is no limit to the numbers of layers but the keys must follow the logic, \textit{i.e.} "slab+integer". It is not recommended to include strains higher than the largest one in the material properties file. It is also \textbf{mendatory} that the first and the last slabs have identical strain, since the code does not cope with polarization charges at the edges of the cell.
+\item The "setup" key: The assigned value is a subdictionary with the description of each slab forming the general setup. For each layer, one has to specify the "polarization" (positive or negative, positive if holes accumulate towards larger $x$), the "strain" of the material and the "width" of the slab (\angstrom). There is no limit to the numbers of layers but the keys must follow the logic, \textit{i.e.} "slab+integer". It is not recommended to include strains higher than the largest one in the material properties file. It is also \textbf{mandatory} that the first and the last slabs have identical strain, since the code does not cope with polarization charges at the edges of the cell.
 \end{itemize}
 
 \subsubsection{Map Calculation}
@@ -229,14 +227,14 @@ Each type of calculation , single-point or map, has its own input file template.
 
 \item The "plot\_fit" key: If \texttt{true}, the fitting of materials properties for any strain is displayed in a series of graphs
 
-\item The "nb\_of\_steps" key: Since a wide range of setup sizes is spanned in a map calculation, a common step size might be a problem. Ii is instead dynamically adapted as $\Delta x = \frac{L_{tot}}{\text{nb\_of\_steps}}$
+\item The "nb\_of\_steps" key: Since a wide range of setup sizes is spanned in a map calculation, a common step size might be a problem. It is instead dynamically adapted as $\Delta x = \frac{L_{tot}}{\text{nb\_of\_steps}}$
 
 \item The "upper\_delta\_x\_limit" key: In case a limit should be imposed on the step size: $\Delta x = min(\frac{L_{tot}}{nb\_of
 \_steps}, \text{upper\_delta\_x\_limit})$
 
 \item The "strain" key: The assigned value is a subdictionary with the lower and upper bound ("min\_strain" and "max\_strain") of the strains over which calculations will be done. 
 
-\item The "width" key: The assigned value is a subdictionary with the lower and upper bound ("min\_width" and "max\_width") of the width over which calculations will be done. The width refers to the unstrained material, the size of the strained slab is computed via $L_{strained} = (1+\epsilon)L_{unstrained}$. In this example, 110 single-point calculations will be conducted with every combination of strain $\epsilon = 0.0, 0.01,...,0.1$ and width $L = 10.0, 15.0,..., 60.0$.
+\item The "width" key: The assigned value is a subdictionary with the lower and upper bound ("min\_width" and "max\_width") of the width over which calculations will be done. The width refers to the unstrained material, the size of the strained slab is computed via $L_{strained} = (1+\epsilon)L_{unstrained}$. In this example, 121 single-point calculations will be conducted with every combination of strain $\epsilon = 0.0, 0.01,...,0.1$ and width $L = 10.0, 15.0,..., 60.0$.
 
 
 \end{itemize}

@@ -36,11 +36,12 @@ def read_input_materials_properties():
     """
     Build a suitable (for the following code) dictionnary containing the materials properties from an external json file
     """
-    if json_matprop in os.listdir("../input/"):
-	with open("../input/"+json_matprop) as f:
-	    matprop = json.load(f)
-    else:
-	print >> sys.stderr, ("Error: The material properties json file (%s) passed as argument does not exist or it is not in the correct directory" %json_matprop)
+
+    try:
+        with open(json_matprop) as f:
+            matprop = json.load(f)
+    except IOError:
+	print >> sys.stderr, ("Error: The material properties json file (%s) passed as argument does not exist" % json_matprop)
 	sys.exit(1)
     
     suitable_mat_prop = {}
@@ -180,27 +181,27 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     #actually fitting with optional vizualization
     
     #polarization charge
-    p = n.polyfit(strain,pol_charge,2)
-    new_strain_prop["pol_charge"] = p[0]*new_strain**2  + p[1]*new_strain + p[2]
+    p = n.polyfit(strain,pol_charge,3)
+    new_strain_prop["pol_charge"] = p[0]*new_strain**3  + p[1]*new_strain**2 + p[2]*new_strain + p[3]
     if plot_fit :
 	plt.ion()
 	plt.figure(1)
 	plt.title("Polarization charge fit")
 	plt.plot(strain,pol_charge,'kx')
 	x = n.arange(0.,max(max(strain),new_strain)+0.001,0.001)
-	y = p[0]*x**2 + p[1]*x + p[2]
+	y = p[0]*x**3 + p[1]*x**2 + p[2]*x + p[3]
 	plt.plot(x,y )
 	plt.xlabel("Strain")
 
     # alpha 
-    p = n.polyfit(strain,alpha,2)
-    new_strain_prop["alpha"] = p[0]*new_strain**2  + p[1]*new_strain + p[2]
+    p = n.polyfit(strain,alpha,3)
+    new_strain_prop["alpha"] = p[0]*new_strain**3  + p[1]*new_strain**2 + p[2]*new_strain + p[3]
     if plot_fit :
 	plt.figure(2)
 	plt.title("Alpha fit")
 	plt.plot(strain,alpha,'kx')
 	x = n.arange(0.,max(max(strain),new_strain)+0.001,0.001)
-	y = p[0]*x**2 + p[1]*x + p[2]
+	y = p[0]*x**3 + p[1]*x**2 + p[2]*x + p[3]
 	plt.plot(x,y )
 	plt.xlabel("Strain")
 
@@ -340,11 +341,11 @@ def read_calculation_input() :
     Read the calculation input file and returns the input dictionary
     """
     
-    if calc_input in os.listdir("../input/"):
-	with open("../input/"+calc_input) as f:
-	    input_dict = json.load(f)
-    else:
-	print >> sys.stderr, ("Error: The calculation input json file (%s) passed as argument does not exist or it is not in the correct directory" %calc_input)
+    try:
+        with open(calc_input) as f:
+            input_dict = json.load(f)
+    except IOError:
+	print >> sys.stderr, ("Error: The calculation input json file (%s) passed as argument does not exist" % calc_input)
 	sys.exit(1)
     
     return input_dict
