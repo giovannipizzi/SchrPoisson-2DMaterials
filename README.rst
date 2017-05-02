@@ -9,7 +9,11 @@ Schrödinger-Poisson solver for 2D materials
 ============
 Introduction
 ============
-
+This code aims at self-consistently solving the coupled Schrödinger-Poisson equations in 2D
+materials. More precisely, in the current implementation it is designed to simulate nanosheets of
+a single material with regions of different strains. The Schrödinger equation is in 1D, meaning
+that the strain can vary on a single axis *x*. Moreover, the material is assumed to be infinite 
+in the *y* direction and periodic in the *x* direction.
 
 ===========
 How to cite
@@ -41,14 +45,17 @@ where you need to replace the two command-line options with two valid
 input files, the first for the materials properties of the system, and the
 second with the code input flags.
 
+You will find some example input files in the ``input_examples`` subfolder.
+
 ==============================
 Description of the input files
 ==============================
 The two input files must be in JSON format and contain all the input
-needed to specify the system and ask what to compute.
+needed to specify the system properties and the input flags.
 
-A detailed description can be found in the `PDF documentation`_ in
-the ``docs/compiled_docs subfolder``.
+A detailed description of the input flags can be found in the `PDF documentation`_ in
+the ``docs/compiled_output`` subfolder, as well as a longer documentation and the 
+description of the output files produced by the code.
 
 .. _PDF documentation: https://github.com/giovannipizzi/schrpoisson_2dmaterials/raw/master/docs/compiled_output/schrpoisson_2dmaterials_docs.pdf
 
