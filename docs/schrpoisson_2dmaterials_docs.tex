@@ -1,256 +1,305 @@
 \documentclass[a4paper,12pt]{article}
-\usepackage{amsmath}
-\usepackage[margin=2cm]{geometry}
-\usepackage{graphicx}
-\usepackage{bbding}
-\usepackage[usenames,dvipsnames]{color}
-\usepackage{multirow}
-\usepackage[table]{xcolor}  
-\usepackage{footnote} 
-\usepackage[bottom]{footmisc}     
-\usepackage{titletoc}
-\usepackage{url}
 
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\usepackage[margin=2cm]{geometry}
+
+\usepackage{graphicx}
+\usepackage{xcolor}  
+
+\usepackage[bottom]{footmisc}     
+\usepackage{caption}
+
+\usepackage{url}
 \usepackage[bookmarksnumbered,breaklinks]{hyperref}
 \usepackage{breakurl}
-\def\UrlBreaks{\do\/\do-}
-\usepackage{tabularx}
-\usepackage{bookmark}
-\usepackage{siunitx}
-\usepackage{hhline}
-\usepackage{booktabs}
-\usepackage{caption}
-\usepackage{subcaption}
-\usepackage{fixltx2e}
-\usepackage{amssymb}
-\usepackage[T1]{fontenc}
-\usepackage{textcomp}
-\newcommand{\angstrom}{\textup{\AA}}
-\def \be {\begin{equation}}
-\def \ee {\end{equation}}
+
 \usepackage{listings}
-\usepackage{braket}
-\usepackage[nottoc, notlof, notlot]{tocbibind}
-\newcommand{\setflag}{\newif \ifwhole \wholetrue}
-\setflag 
-\usepackage{appendix}
-\renewcommand\tiny{\@setfontsize\small{10}{11}}
+
+\colorlet{punct}{red!60!black}
+\definecolor{background}{HTML}{EEEEEE}
+\definecolor{delim}{RGB}{20,105,176}
+\colorlet{numb}{magenta!60!black}
+
+\lstdefinelanguage{json}{
+    basicstyle=\normalfont\ttfamily,
+%    numbers=left,
+    numberstyle=\scriptsize,
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+%    frame=lines,
+    backgroundcolor=\color{background},
+    literate=
+     *{0}{{{\color{numb}0}}}{1}
+      {1}{{{\color{numb}1}}}{1}
+      {2}{{{\color{numb}2}}}{1}
+      {3}{{{\color{numb}3}}}{1}
+      {4}{{{\color{numb}4}}}{1}
+      {5}{{{\color{numb}5}}}{1}
+      {6}{{{\color{numb}6}}}{1}
+      {7}{{{\color{numb}7}}}{1}
+      {8}{{{\color{numb}8}}}{1}
+      {9}{{{\color{numb}9}}}{1}
+      {:}{{{\color{punct}{:}}}}{1}
+      {,}{{{\color{punct}{,}}}}{1}
+      {\{}{{{\color{delim}{\{}}}}{1}
+      {\}}{{{\color{delim}{\}}}}}{1}
+      {[}{{{\color{delim}{[}}}}{1}
+      {]}{{{\color{delim}{]}}}}{1},
+}
+
+
+\newcommand{\angstrom}{\textup{\AA}}
 
 \begin{document}
-\title{\textbf{\Huge { 2D Schroedinger-Poisson Solver: Documentation}}}
+\title{Schroedinger--Poisson solver for 2D materials:\\documentation}
 \date{\today}
-%\author{Augustin Bussy} 
+\author{Augustin Bussy \and Giovanni Pizzi \and Marco Gibertini} 
 \maketitle
 
 \section{Introduction}
 
-This code aims at self-consistently solving the coupled Schroedinger-Poisson equations in 2D materials. More accurately, it is designed to simulate nanosheets of a single material with regions of different strains. The Schroedinger equation is in 1D, meaning that the strain can vary on a single axis ($x$), as illustrated in figure \ref{fig:example1}. Moreover, the material is assumed to be infinite in the $y$-direction and periodic in the $x$-direction.\\
+This code aims at self-consistently solving the coupled Schroedinger--Poisson equations in 2D materials. More precisely, in the current implementation it is designed to simulate nanosheets of a single material with regions of different strains. The Schroedinger equation is in 1D, meaning that the strain can vary on a single axis ($x$), as illustrated in Figure~\ref{fig:example1}. Moreover, the material is assumed to be infinite in the $y$-direction and periodic in the $x$-direction.
 
-Two types of calculations can be made: single-point or map. The former precisely simulates a specific setup described in an input file to produce a band or a carrier density profile. This is a useful tool for experiments as it allows to simulated any strain profile (almost continuously). The map calculation screens over different setups of strained/unstrained material to investigate insulator to conductor phase transitions.\\
+Two types of calculations can be made: \emph{single-point} or \emph{map}. The former (\emph{single-point} simulates a specific setup described in an input file (see Sec.~\ref{sec:input}) to produce a band profile and/or a carrier density profile. This is a useful tool for experiments as it allows to simulate any strain profile. The \emph{map} calculation type, instead, screens over different setups of strained/unstrained material to investigate, e.g., insulator-to-conductor phase transitions.
 
-This code uses a multi-scale approach, meaning that the materials properties must come from DFT calculations. The user has to provide vital quantities such as effective masses and polarization charges  for different strains. The properties for at least 4-5 strains should be provided for accurate fitting. It is also not recommended to extrapolate strains larger than those coming from DFT, as the trends could change.
+This code uses a multi-scale approach, meaning that the materials properties must be provided as input, and typically they come from DFT calculations. These quantities include effective masses and polarization charges for different strains. The properties for at least 4 or 5 strains should be provided for accurate fitting. It is also not recommended to extrapolate strains larger than those coming from DFT, as the trends could change.
 
 \begin{figure} [h]
 \begin{center}
 \captionsetup{width=0.8\textwidth}
 \centerline{\includegraphics[width=12cm,angle=0]{img/example1}}
-\caption{Example of simulation setup: Periodic alternation of strained and unstrained material}
+\caption{Example of simulation setup: Periodic alternation of strained and unstrained regions of a given material.}
 \label{fig:example1} 
 \end{center}
 \end{figure}
 
 
-\section{Setting up the code}
-The code itself is contained in 4 files: \texttt{2Dschrpoisson.py}, \texttt{schrpoisson\_wire2.f90}, \texttt{schrpoisson\_wire2.pyf} and \texttt{Makefile}. The bulk of the numerical part being written in FORTRAN, one must compile using the \texttt{make} command. The code is now ready to run using the following command in the code folder:\\
+\section{Compiling and running up the code}
+The code is distributed in the \texttt{code} folder, and consists of three main files.
+The bulk of the numerical computations is written in Fortran in the  \texttt{schrpoisson\_wire.f90} file. This is interfaced to python using \texttt{f2py}, and the interface has been generated by us in the \texttt{schrpoisson\_wire.pyf} file. (If you decide to modify the name, number or signature of the Fortran functions, you need to regenerate this file. This is possible by running the command commented in the Makefile.)
 
-\texttt{python 2Dschrpoisson.py \{material\_properties\}.json  \{calculation\_input\}.json}\\
+To compile the code, run the \texttt{make} command in the \texttt{code} folder.
+You will need to have the \texttt{f2py} executable\footnote{In most cases, if you already have a recent python distribution and \texttt{pip}, you just need to run \texttt{pip install numpy}, or use your package manager to install python-numpy. See here for more information: \url{https://docs.scipy.org/doc/numpy-dev/f2py/}}, that is part of \texttt{numpy}. 
 
-\noindent Note that the Python path to the input json files must be provided.
+After running \texttt{make}, the main python code (\texttt{2Dschrpoisson.py}) is ready to be run using the following command:
 
-\section{Input}
-Two input files are necessary to every calculation: one containing the materials properties and the other the calculation setup. All input files must be stored in the input folder.
-\subsection{Materials Properties File}
-The file containing the properties of the material at different strains must be in the \texttt{json} format, in the form of a python dictionary. The following example is taken from the SnSe\_example.json in the input folder. Note that the properties of the unstrained material are \textbf{mandatory} and must be given under the "0.00" key.\\
+\begin{quote}
+\texttt{python 2Dschrpoisson.py \{material\_properties\}.json  \{calc\_input\}.json}
+\end{quote}
 
-\begin{tabbing}
-\{"0.00": \{ \= "alpha\_xx": 10.22,\\
-	\> "x\_lat": 4.408,\\
-	\> "y\_lat": 4.288,\\
-	\> "polarization\_charge": 0.0,\\
-	\> "vacuum\_level": 3.471695,\\
-	\> "valence\_gamma": \{ \="energy": -1.508255819,\\
-			     \>\>"conf\_mass": 1.755925079,\\
-			     \>\>"DOS\_mass": 2.7330924,\\
-			     \>\>"degeneracy": 1\\
-			     \>\>\},\\
-	   \>"valence\_gamma-X": \{\="energy": -0.8832657543,\\
-			      \>\> "conf\_mass": 0.125168454,\\
-			      \> \>"DOS\_mass": 0.159070572,\\
-			       \>\>"degeneracy": 2\\
-			      \>\> \},\\
-	   \>"valence\_gamma-Y": \{\="energy": -1.064317364,\\
-			      \>\> "conf\_mass": 0.109554071,\\
-			      \>\> "DOS\_mass": 0.159511425,\\
-			      \>\> "degeneracy": 2\\
-			      \>\>\},\\
-	   \>"conduction\_gamma": \{\="energy": 0.6090962485,\\
-				\>\>"conf\_mass": 2.741100107,\\
-				\>\>"DOS\_mass": 2.994158008,\\
-			        \>\>"degeneracy": 1\\
-			       \>\>\},\\
-	  \> "conduction\_gamma-X": \{\="energy": 0.0902128713,\\
-				\>\>  "conf\_mass": 0.110807373,\\
-				\>\>  "DOS\_mass": 0.190387132,\\
-			        \>\>  "degeneracy": 2\\
-				\>\> \},\\
-	   \>"conduction\_gamma-Y": \{\="energy": 0.05720314215,\\
-				\>\>  "conf\_mass": 0.131542031,\\
-				  \>\>"DOS\_mass": 0.130378261,\\
-			          \>\>"degeneracy": 2\\
-				 \>\>\}\\
-	 \>\},\\
-\ "0.01": \{\=...\\
-	  \>\},\\
-...\}\\
-\end{tabbing}
+Note that, if the two json files are not in the same folder, you need to specify the full (relative or absolute) path to them.
 
-\begin{itemize}
-\item The "0.00" key: the first key is the strain of a the material and the assigned value is a subdictionary with all the relevant peoperties. The "0.00" key is mendatory.
+\section{\label{sec:input}Input}
+Two input files are necessary to every calculation: one containing the materials properties and the other the calculation setup. 
 
-\item The "alpha\_xx" key: this refers to the polarizability of the strained material in \angstrom. $x$ is the direction along which different strains/materials alternate
+\subsection{Material Properties File}
+The properties of the material at different strains must be provided in \texttt{json} file as first command line option. 
+The file should contain a dictionary, where the key is a string representation of the
+float value, and the value should be a dictionary with a given number of keys, as shown in
+the example below.
 
-\item The "x\_lat" and "y\_lat" keys: the lattice parameters of the unit cell in \angstrom. Only needed for the unstrained material
+The following example is taken from the \texttt{SnSe\_example.json} file in the \texttt{input\_example} folder. Note that the properties of the unstrained material are \emph{mandatory} and must be provided under the ``\texttt{0.00}'' key. Below the example, there are some explanatory comments.
 
-\item The "polarization\_charge" key: the polarization charge at the edge of the material in units of electron per unit cell width, \textit{i.e.} e/b.
+\subsubsection*{File example}
 
-\item The "vacuum\_level" key: Self-explanatory, needed to align energy levels across the setup (in eV).
+\begin{lstlisting}[language=json,firstnumber=1]
+{"0.00": {
+   "alpha_xx": 10.22,
+   "x_lat": 4.408,
+   "y_lat": 4.288,
+   "polarization_charge": 0.0,
+   "vacuum_level": 3.471695,
+   "valence_gamma": { 
+     "energy": -1.508255819,
+     "conf_mass": 1.755925079,
+     "DOS_mass": 2.7330924,
+     "degeneracy": 1
+   },
+   "valence_gamma-X": {
+     "energy": -0.8832657543,
+     "conf_mass": 0.125168454,
+     "DOS_mass": 0.159070572,
+     "degeneracy": 2
+   },
+   "valence_gamma-Y": {
+     "energy": -1.064317364,
+     "conf_mass": 0.109554071,
+     "DOS_mass": 0.159511425,
+     "degeneracy": 2
+   },
+   "conduction_gamma": {
+     "energy": 0.6090962485,
+     "conf_mass": 2.741100107,
+     "DOS_mass": 2.994158008,
+     "degeneracy": 1
+   },
+   "conduction_gamma-X": {
+     "energy": 0.0902128713,
+     "conf_mass": 0.110807373,
+     "DOS_mass": 0.190387132,
+     "degeneracy": 2
+   },
+   "conduction_gamma-Y": {
+     "energy": 0.05720314215,
+     "conf_mass": 0.131542031,
+     "DOS_mass": 0.130378261,
+     "degeneracy": 2
+   }
+ },
+ "0.01": {
+   ...
+ },
+ ...
+}
+\end{lstlisting}
 
-\item The energy levels keys: They need to either contain the word \texttt{valence} or \texttt{conduction}, which is needed by the code. The assigned value is a subdictionary with the energy of the band extremum (eV), the confinement and density of states (DOS) masses (respectively effective masses in $x$ and $y$ direction) and the degeneracy of the energy level in the first BZ.
 
-\end{itemize}
+\subsubsection*{Description of the keys in each subdictionary, for each strain}
+\begin{description}
+\item[\texttt{alpha\_xx}] Value of the polarizability of the strained material in \angstrom. $x$ is the direction along which different strains/materials alternate (see Fig.~\ref{fig:example1}).
+
+\item[\texttt{x\_lat}, \texttt{y\_lat}] The lattice parameters of the unit cell in \angstrom. \emph{Only needed for the unstrained material.}
+
+\item[\texttt{polarization\_charge}] Polarization charge at the edge of the material in units of electron per unit cell width, \textit{i.e.} e/$b$.
+
+\item[\texttt{vacuum\_level}] Needed to align energy levels across the setup (in eV).
+
+\item[Energy extrema keys] They need to either contain the string \texttt{valence} or \texttt{conduction} (this is a requirement by the code). The assigned value is a subdictionary with the energy of the band extremum in eV (\texttt{energy}), the confinement mass (\texttt{conf\_mass}) and density of states (DOS) mass (\texttt{DOS\_mass}), that are respectively the effective masses in the $x$ and $y$ directions), and the degeneracy of the energy level in the first BZ (\texttt{degeneracy}).
+\end{description}
+
 
 \subsection{Calculation Input File}
-Each type of calculation , single-point or map, has its own input file template. However, both of them are required to be \texttt{json} files in the form of a python dictionary. The following examples can be found in the input folder and can be generated using the \texttt{create\_calc\_input.py} script.
+Each type of calculation (single-point or map) has its own input file template with different keys. In both cases, the input file should be in \texttt{json} format and be provided as the second command line argument. 
 
-\subsubsection{Single-Point Calculation}
+The following examples can be found in the \texttt{input\_examples} folder. In the same folder, a simple python script (\texttt{create\_calc\_input.py}) could be useful to write a json file starting from a python dictionary.
 
-\begin{tabbing}
-\{ \ \= \\
-          \>"calculation": "single\_point", \\
-           \>"out\_dir": "single\_point\_output", \\
-           \>"smearing": true, \\
-           \>"KbT": 0.005,\\
-           \>"max\_iteration": 1000, \\
-          \>"plot\_fit": false, \\
-         \> "nb\_of\_states\_per\_band": 2, \\
-          \>"delta\_x": 0.5, \\
-          \>"setup": \{ \= \\
-                   \>\> "slab1": \{ \= \\
-                             \>\>\> "polarization": "positive", \\
-                               \>\>\>"strain": 0.0, \\
-                               \>\>\>"width": 15.0\\
-                    \>\>\}, \\
-                    \>\>"slab2": \{\= \\
-                               \>\>\>"polarization": "positive",\\ 
-                               \>\>\>"strain": 0.08, \\
-                               \>\>\>"width": 30.0\\
-                    \>\>\},\\
-                    \>\>"slab3": \{\= \\
-                               \>\>\>"polarization": "positive",\\ 
-                              \>\>\> "strain": 0.0, \\
-                               \>\>\>"width": 15.0\\
-                    \>\>\}, \\
+\subsubsection{Single-point calculation}
 
-          \>\}, \\
+\begin{lstlisting}[language=json,firstnumber=1]
+  {   
+    "calculation": "single_point", 
+    "out_dir": "single_point_output", 
+    "smearing": true, 
+    "KbT": 0.005,
+    "max_iteration": 1000, 
+    "plot_fit": false, 
+    "nb_of_states_per_band": 2, 
+    "delta_x": 0.5, 
+    "setup": {  
+      "slab1": {  
+        "polarization": "positive", 
+        "strain": 0.0, 
+        "width": 15.0
+      }, 
+      "slab2": { 
+        "polarization": "positive", 
+        "strain": 0.08, 
+        "width": 30.0
+      },
+      "slab3": { 
+        "polarization": "positive", 
+        "strain": 0.0, 
+        "width": 15.0
+      }
+    }
+  }
+\end{lstlisting}
 
+\subsubsection*{Description of the dictionary keys}
 
-\}\\
-\end{tabbing}
+\begin{description}
+\item[\texttt{calculation}] The value \texttt{"single\_point"} indicates the type of calculation
 
-\begin{itemize}
-\item The "calculation" key: the value \texttt{"single\_point"} indicates the type of calculation
+\item[\texttt{out\_dir}] The name of the folder where the output data is dumped
 
-\item The "out\_dir" key: indicates the name of the folder where the output data is dumped
+\item[\texttt{smearing}] If \texttt{true}, a Marzari--Vanderbilt smearing is imposed for the electron distribution. It helps for the convergence of the self-consistent Schroedinger--Poisson loop and allows better comparisons with DFT calculations
 
-\item The "smearing" key: If \texttt{true}, a Marzari-Vanderbilt smearing is imposed for the electron distribution. It helps for the convergence of the self-consistent Schroedinger-Poisson loop and allows better comparisons with DFT calculations.
+\item[\texttt{KbT}] In case of smearing, this is the imposed electronic temperature (Ry)
 
-\item The "KbT" key: In case of smearing, this is the imposed electronic temperature (Ry)
+\item[\texttt{max\_iteration}] The number of allowed steps for the self-consistent Schroedinger--Poisson loop. 1000 is a safe number
 
-\item The "max\_iteration" key: The number of allowed steps for the self-consistent Schroedinger-Poisson loop, 1000 is a safe number.
+\item[\texttt{plot\_fit}] If \texttt{true}, the fitting of materials properties for any strain is displayed interactively in a series of graphs using matplotlib (that needs to be installed)
 
-\item The "plot\_fit" key: If \texttt{true}, the fitting of materials properties for any strain is displayed in a series of graphs
+\item[\texttt{nb\_of\_states\_per\_band}] Useful to limit the size of the output data. In this example, only two quantum states per band (6 in total) will be reported
 
-\item The "nb\_of\_states\_per\_band" key: To limit the size of the output data. Here, only two quantum states per band (6 in total) will be reported
+\item[\texttt{delta\_x}] The size of the discretization step in space (\angstrom)
 
-\item The "delta\_x" key: The size of the discretization step in space (\angstrom)
+\item[\texttt{setup}] The value is a subdictionary with the description of each slab forming the setup. For each layer, one has to specify the \texttt{polarization} (\texttt{positive} or \texttt{negative}: positive if holes accumulate towards larger $x$), the \texttt{strain} of the material and the \texttt{width} of the slab (in \angstrom). There is no limit to the numbers of layers, but the keys must follow the syntax \texttt{slab\%d} where \texttt{\%d} should be replaced with the integer, starting from 1. It is not recommended to include strains higher than the largest one in the material properties file. 
 
-\item The "setup" key: The assigned value is a subdictionary with the description of each slab forming the general setup. For each layer, one has to specify the "polarization" (positive or negative, positive if holes accumulate towards larger $x$), the "strain" of the material and the "width" of the slab (\angstrom). There is no limit to the numbers of layers but the keys must follow the logic, \textit{i.e.} "slab+integer". It is not recommended to include strains higher than the largest one in the material properties file. It is also \textbf{mandatory} that the first and the last slabs have identical strain, since the code does not cope with polarization charges at the edges of the cell.
-\end{itemize}
+\textbf{Note}: it is also \emph{mandatory} that the first and the last slabs have identical strain, since the code does not cope with polarization charges at the edges of the cell.
+\end{description}
 
-\subsubsection{Map Calculation}
+\subsubsection{Map calculation}
 
-\begin{tabbing}
-\{\= \\
-	 \> "calculation": "map", \\
-	 \>"out\_dir": "map\_output", \\
-          \>"smearing": true, \\
-           \>"KbT": 0.005, \\
-           \>"max\_iteration": 1000, \\
-           \>"plot\_fit": false, \\
-          \>"nb\_of\_steps": 200, \\
-	 \> "upper\_delta\_x\_limit": 0.5, \\
-         \> "strain": \{ \= \\
-                    \>\>"max\_strain": 0.1, \\
-                    \>\>"min\_strain": 0.0, \\
-                    \>\>"strain\_step": 0.01\\
-         \> \}, \\
-          \>"width": \{ \= \\
-                    \>\>"min\_width": 10.0,\\ 
-                    \>\>"width\_step": 5.0, \\
-                    \>\>"max\_width": 60.0\\
-          \>\}, \\
+\begin{lstlisting}[language=json,firstnumber=1]
+  { 
+    "calculation": "map", 
+    "out_dir": "map_output", 
+    "smearing": true, 
+    "KbT": 0.005, 
+    "max_iteration": 1000, 
+    "plot_fit": false, 
+    "nb_of_steps": 200, 
+    "upper_delta_x_limit": 0.5, 
+    "strain": {  
+      "max_strain": 0.1, 
+      "min_strain": 0.0, 
+      "strain_step": 0.01
+    }, 
+    "width": {  
+      "min_width": 10.0, 
+      "width_step": 5.0, 
+      "max_width": 60.0
+    }
+  }
+\end{lstlisting}
 
-\}\\
-\end{tabbing}
+\subsubsection*{Description of the dictionary keys}
 
+\begin{description}
+\item[\texttt{calculation}] The value \texttt{"map"} indicates the type of calculation
 
-\begin{itemize}
-\item The "calculation" key: the value \texttt{"map"} indicates the type of calculation
+\item[\texttt{out\_dir}] The name of the folder where the output data is dumped
 
-\item The "out\_dir" key: indicates the name of the folder where the output data is dumped
+\item[\texttt{smearing}] If \texttt{true}, a Marzari--Vanderbilt smearing is imposed for the electron distribution. It helps for the convergence of the self-consistent Schroedinger--Poisson loop and allows better comparisons with DFT calculations
 
-\item The "smearing" key: If \texttt{true}, a Marzari-Vanderbilt smearing is imposed for the electron distribution. It helps for the convergence of the self-consistent Schroedinger-Poisson loop and allows better comparisons with DFT calculations.
+\item[\texttt{KbT}] In case of smearing, this is the imposed electronic temperature (Ry)
 
-\item The "KbT" key: In case of smearing, this is the imposed electronic temperature (Ry)
+\item[\texttt{max\_iteration}] The number of allowed steps for the self-consistent Schroedinger--Poisson loop. 1000 is a safe number
 
-\item The "max\_iteration" key: The number of allowed steps for the self-consistent Schroedinger-Poisson loop, 1000 is a safe number.
+\item[\texttt{plot\_fit}] If \texttt{true}, the fitting of materials properties for any strain is displayed in a series of graphs using matplotlib (that needs to be installed)
 
-\item The "plot\_fit" key: If \texttt{true}, the fitting of materials properties for any strain is displayed in a series of graphs
+\item[\texttt{nb\_of\_steps}] Since a wide range of setup sizes is spanned in a map calculation, a common step size might be a problem. It is instead dynamically adapted as
+$$\Delta x = \frac{L_{tot}}{\text{\texttt{nb\_of\_steps}}}$$
 
-\item The "nb\_of\_steps" key: Since a wide range of setup sizes is spanned in a map calculation, a common step size might be a problem. It is instead dynamically adapted as $\Delta x = \frac{L_{tot}}{\text{nb\_of\_steps}}$
+\item[\texttt{upper\_delta\_x\_limit}] In case an (upper) limit should be imposed on the step size: 
+$$\Delta x = min\left(\frac{L_{tot}}{\text{\texttt{nb\_of\_steps}}}, 
+\text{\texttt{upper\_delta\_x\_limit}}\right)$$
 
-\item The "upper\_delta\_x\_limit" key: In case a limit should be imposed on the step size: $\Delta x = min(\frac{L_{tot}}{nb\_of
-\_steps}, \text{upper\_delta\_x\_limit})$
+\item[\texttt{strain}] The assigned value is a subdictionary with the lower and upper bound (\texttt{min\_strain} and \texttt{max\_strain}) of the strains over which calculations will be done, as well as the step between strains \texttt{strain\_step}
 
-\item The "strain" key: The assigned value is a subdictionary with the lower and upper bound ("min\_strain" and "max\_strain") of the strains over which calculations will be done. 
+\item[\texttt{width}] The assigned value is a subdictionary with the lower and upper bound (\texttt{min\_width} and \texttt{max\_width}) of the width over which calculations will be done, as well as the step between widths \texttt{width\_step}. 
 
-\item The "width" key: The assigned value is a subdictionary with the lower and upper bound ("min\_width" and "max\_width") of the width over which calculations will be done. The width refers to the unstrained material, the size of the strained slab is computed via $L_{strained} = (1+\epsilon)L_{unstrained}$. In this example, 121 single-point calculations will be conducted with every combination of strain $\epsilon = 0.0, 0.01,...,0.1$ and width $L = 10.0, 15.0,..., 60.0$.
+\textbf{Note}: the width refers to the unstrained material and the size of the strained slab is computed as $L_{strained} = (1+\epsilon)L_{unstrained}$. 
 
+In this example, 121 single-point calculations will be conducted with every combination of strain $\epsilon = 0.0, 0.01,\ldots,0.1$ and width $L = 10, 15,\ldots, 60$.
 
-\end{itemize}
-
-
-
+\end{description}
 
 
 \section{Output}
 
 \subsection{Single-Point Calculation}
-In single-point calculations, 3 output files are generated. The first  one (\texttt{general\_info.txt}) contains general information such as the number of iterations needed, convergence parameters or total free carrier density. The second one, \texttt{band\_data.txt}, contains all the necessary information to produce a band profile (Fermi energy, potential profile of each band, their respective quantum states, etc.) Finally, the last file (\texttt{density\_profile.txt}) contains the free electrons and holes density as a function of position, in different units.
-
+In single-point calculations, three output files are generated. The first one (\texttt{general\_info.txt}) contains general output information such as the number of iterations needed, convergence parameters and the total free carrier density. The second one (\texttt{band\_data.txt}) contains all the necessary information to produce a band profile (Fermi energy, potential profile of each band, their respective quantum states, etc.).
+Finally, the last file (\texttt{density\_profile.txt}) contains the free-electron and free-hole density as a function of position.
 
 
 \subsection{Map Calculation}
-Map calculations produce a single output file in which, among others, the total electron density is given for each strain/width combination in order to produce a map.
+Map calculations produce a single output file in which, among others, the total electron density is given for each strain/width combination. This can be then used to produce a two-dimensional color map.
 
 \end{document}
