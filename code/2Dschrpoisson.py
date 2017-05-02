@@ -557,7 +557,7 @@ class Slab(object):
         
         Return True upon convergence
         """
-        import schrpoisson_wire2 as spw        
+        import schrpoisson_wire as spw        
         
         self._counter += 1
         self._Ef[self._counter%2] = e_fermi
