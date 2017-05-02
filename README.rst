@@ -1,7 +1,13 @@
 ============
 Introduction
 ============
+###########################################
+Schrödinger-Poisson solver for 2D materials
+###########################################
 
+.. contents::
+
+.. section-numbering::
 
 ===========
 How to cite
