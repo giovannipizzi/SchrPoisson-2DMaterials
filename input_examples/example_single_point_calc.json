@@ -23,6 +23,6 @@
                     }
           }, 
           "max_iteration": 1000, 
-          "plot_fit": true, 
+          "plot_fit": false, 
           "KbT": 0.005
 }

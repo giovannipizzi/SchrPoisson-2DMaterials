@@ -1,3 +1,12 @@
+"""
+Main executable of the Schroedinger--Poisson solver for 2D materials.
+See PDF documentation for its usage.
+
+You need to pass on the command line the path to two JSON files, the first
+to the materials properties, and the second to the calculation input flags:
+
+  python modulable_2Dschrpoisson.py {material_props}.json  {calc_input}.json
+"""
 import numpy as n
 import scipy
 import scipy.linalg
@@ -10,48 +19,49 @@ import json
 import matplotlib
 import matplotlib.pyplot as plt
 
-# How to launch the code from terminal: python modulable_2Dschrpoisson.py {material_props}.json  {calc_input}.json
-
 try:
-    json_matprop = sys.argv[1]
-    if ".json" not in json_matprop :
-	raise IndexError
-except IndexError :
-    print >> sys.stderr, ("Error: The material properties must be contained in a json file")
-    sys.exit(1)
+    import schrpoisson_wire as spw        
+except ImportError:
+    raise ImportError("You need to have the schrpoisson_wire module.\n"
+                      "To obtain it, you have to compile the Fortran code using f2py.\n"
+                      "If you have f2py already installed, you will most probably need only to\n"
+                      "run 'make' in the same folder as the code.")
 
-try : 
-    calc_input = sys.argv[2]
-    if ".json" not in calc_input :
-	raise IndexError
-except IndexError :
-    print >> sys.stderr, ("Error: The calculation input must be a json file")
-    sys.exit(1)
+
+#hbar^2/m0 in units of eV*ang*ang
+HBAR2OVERM0=7.61996163
+# periodicity, should remain true in this case
+is_periodic = True
+
+# Small threshold to check for charge neutrality
+small_threshold = 1.e-6
     
-    
-# The modulable part, where inputs are treated so that the rest of the code works well
-#================================================================================================================
+# If True, in run_simulation redirect part of the output to /dev/null
+reduce_stdout_output = True
 
-def read_input_materials_properties():
+def read_input_materials_properties(json_matprop):
     """
-    Build a suitable (for the following code) dictionnary containing the materials properties from an external json file
+    Build a suitable dictionary containing the materials properties starting from an external json file
     """
-
     try:
         with open(json_matprop) as f:
             matprop = json.load(f)
     except IOError:
 	print >> sys.stderr, ("Error: The material properties json file (%s) passed as argument does not exist" % json_matprop)
 	sys.exit(1)
+    except ValueError:
+	print >> sys.stderr, ("Error: The material properties json file (%s) is probably not a valid JSON file" % json_matprop)
+	sys.exit(1)
+
     
     suitable_mat_prop = {}
     num_of_mat = len(matprop)
     valence_keys = []
     conduction_keys = []
-    try :
+    try:
 	a_lat = matprop["0.00"]["x_lat"]
 	b_lat = matprop["0.00"]["y_lat"]
-    except KeyError :
+    except KeyError:
 	print >> sys.stderr, ("Error: lattice parameters not set up correctly in file '%s'" %json_matprop)
 	sys.exit(1)
 	
@@ -62,17 +72,15 @@ def read_input_materials_properties():
 		valence_keys.append(key)
 	    if "conduction" in key:
 		conduction_keys.append(key)
-	if len(valence_keys) == 0 or len(conduction_keys) == 0 :
-	    raise KeyError 
-	
+	if len(valence_keys) == 0 or len(conduction_keys) == 0:
+	    raise KeyError 	
     except KeyError:
 	print >> sys.stderr, ("Error: The material properties json file (%s) must contain unstrained data with key '0.00' and subdictionaries must contain valence/conduction in their names" %json_matprop)
 	sys.exit(1)
     
-    
     #looping over the different strains
-    try :
-	for strain in matprop.keys() :
+    try:
+	for strain in matprop.keys():
 	    condenergies = []
 	    valenergies = []
 	    condmass = []
@@ -90,12 +98,12 @@ def read_input_materials_properties():
 	    suitable_mat_prop[strain]["pol_charge"] = matprop[strain]["polarization_charge"]*1./b_lat * 1e8 #in units of e/cm
 	    
 	    #energy extrema specifics
-	    for key in valence_keys :
+	    for key in valence_keys:
 		valenergies.append(matprop[strain][key]["energy"]-matprop[strain]["vacuum_level"]+matprop["0.00"]["vacuum_level"]) #need to align bands be substracting the vaccum level
 		valmass.append(matprop[strain][key]["conf_mass"])
 		valdosmass.append(matprop[strain][key]["DOS_mass"])
 		valdegeneracy.append(matprop[strain][key]["degeneracy"])
-	    for key in conduction_keys :
+	    for key in conduction_keys:
 		condenergies.append(matprop[strain][key]["energy"]-matprop[strain]["vacuum_level"]+matprop["0.00"]["vacuum_level"]) #need to align bands be substracting the vaccum level
 		condmass.append(matprop[strain][key]["conf_mass"])
 		conddosmass.append(matprop[strain][key]["DOS_mass"])
@@ -111,7 +119,7 @@ def read_input_materials_properties():
 	    suitable_mat_prop[strain]["valdegeneracy"] = valdegeneracy
 	    suitable_mat_prop[strain]["conddegeneracy"] = conddegeneracy
     	    
-    except KeyError :
+    except KeyError:
 	print >> sys.stderr, ("Error: The material properties json file (%s) is not rightly organized: some dictionary keys might be missing" %json_matprop)
 	sys.exit(1)
     
@@ -128,13 +136,31 @@ def read_input_materials_properties():
 	
     return suitable_mat_prop, a_lat, b_lat
 
+def read_calculation_input(calc_input):
+    """
+    Read the calculation input file and returns the input dictionary
+    """
+    try:
+        with open(calc_input) as f:
+            input_dict = json.load(f)
+    except IOError:
+	print >> sys.stderr, ("Error: The calculation input json file (%s) passed as argument does not exist" % calc_input)
+	sys.exit(1)
+    except ValueError:
+	print >> sys.stderr, ("Error: The material properties json file (%s) is probably not a valid JSON file" % json_matprop)
+	sys.exit(1)
+    
+    return input_dict
+
+
 def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     """
-    For a given strain, the relevant information such ass masses and energies are interpolated and the material properties dictionnary is updated
+    For a given strain, the relevant information such masses and energies are interpolated and the 
+    material properties dictionary is updated
     """
     
     # initializing arrays containing valence and conduction properties
-    valenergies = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["valenergies"]))) #(len(mat_prop)/3 because for each strain. there are 2 delta doping
+    valenergies = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["valenergies"]))) # len(mat_prop)/3 because for each strain there are 2 delta doping
     condenergies = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["condenergies"])))
     valmass = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["valmass"])))
     condmass = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["condmass"])))
@@ -143,15 +169,13 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     pol_charge = n.zeros(len(mat_prop)/3)
     alpha = n.zeros(len(mat_prop)/3)
     
-    
-    
     # the strain array vs which evry physical quantity will be fitted (not sorted yet)
     strain = n.zeros(len(mat_prop)/3)
     
     # looping on the material properties versus strain
     i = 0
     for key in mat_prop.keys():
-	if "doping" not in key :
+	if "doping" not in key:
 	    strain[i] = float(key)
 	    valenergies[i,:] = mat_prop[key]["valenergies"] 
 	    condenergies[i,:] = mat_prop[key]["condenergies"]
@@ -178,12 +202,12 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     # the future dictionary entry for the new strain
     new_strain_prop = {}
     
-    #actually fitting with optional vizualization
+    #actually fitting with optional visualization
     
     #polarization charge
     p = n.polyfit(strain,pol_charge,3)
     new_strain_prop["pol_charge"] = p[0]*new_strain**3  + p[1]*new_strain**2 + p[2]*new_strain + p[3]
-    if plot_fit :
+    if plot_fit:
 	plt.ion()
 	plt.figure(1)
 	plt.title("Polarization charge fit")
@@ -196,7 +220,7 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     # alpha 
     p = n.polyfit(strain,alpha,3)
     new_strain_prop["alpha"] = p[0]*new_strain**3  + p[1]*new_strain**2 + p[2]*new_strain + p[3]
-    if plot_fit :
+    if plot_fit:
 	plt.figure(2)
 	plt.title("Alpha fit")
 	plt.plot(strain,alpha,'kx')
@@ -208,14 +232,14 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     
     # valence band energies
     new_valenergies = []
-    if plot_fit :
+    if plot_fit:
 	plt.figure(3)
 	plt.title("Valence energies fit")
 	plt.xlabel("Strain")
-    for j in range(len(mat_prop["0.00"]["valenergies"])) :
+    for j in range(len(mat_prop["0.00"]["valenergies"])):
 	p = n.polyfit(strain,valenergies[:,j],2)
 	new_valenergies.append( p[0]*new_strain**2  + p[1]*new_strain + p[2])
-	if plot_fit :
+	if plot_fit:
 	    plt.plot(strain,valenergies[:,j],'kx')
 	    x = n.arange(0.,max(max(strain),new_strain)+0.001,0.001)
 	    y = p[0]*x**2 + p[1]*x + p[2]
@@ -224,14 +248,14 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     
     # conduction band energies
     new_condenergies = []
-    if plot_fit :
+    if plot_fit:
 	plt.figure(4)
 	plt.title("Conduction energies fit")
 	plt.xlabel("Strain")
-    for j in range(len(mat_prop["0.00"]["condenergies"])) :
+    for j in range(len(mat_prop["0.00"]["condenergies"])):
 	p = n.polyfit(strain,condenergies[:,j],2)
 	new_condenergies.append( p[0]*new_strain**2  + p[1]*new_strain + p[2])
-	if plot_fit :
+	if plot_fit:
 	    plt.plot(strain,condenergies[:,j],'kx')
 	    x = n.arange(0.,max(max(strain),new_strain)+0.001,0.001)
 	    y = p[0]*x**2 + p[1]*x + p[2]
@@ -240,14 +264,14 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     
     # valence band confinement masses
     new_valmass = []
-    if plot_fit :
+    if plot_fit:
 	plt.figure(5)
 	plt.title("Valence confinement (inverse) mass fit")
 	plt.xlabel("Strain")
-    for j in range(len(mat_prop["0.00"]["valmass"])) :
+    for j in range(len(mat_prop["0.00"]["valmass"])):
 	p = n.polyfit(strain,1./valmass[:,j],2)
 	new_valmass.append( 1./(p[0]*new_strain**2  + p[1]*new_strain + p[2]))
-	if plot_fit :
+	if plot_fit:
 	    plt.plot(strain,1./valmass[:,j],'kx')
 	    x = n.arange(0.,max(max(strain),new_strain)+0.001,0.001)
 	    y = (p[0]*x**2 + p[1]*x + p[2])
@@ -256,14 +280,14 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     
     # conduction band confinement masses
     new_condmass = []
-    if plot_fit :
+    if plot_fit:
 	plt.figure(6)
 	plt.title("Conduction confinement (inverse) mass fit")
 	plt.xlabel("Strain")
-    for j in range(len(mat_prop["0.00"]["condmass"])) :
+    for j in range(len(mat_prop["0.00"]["condmass"])):
 	p = n.polyfit(strain,1./condmass[:,j],2)
 	new_condmass.append( 1./(p[0]*new_strain**2  + p[1]*new_strain + p[2]))
-	if plot_fit :
+	if plot_fit:
 	    plt.plot(strain,1./condmass[:,j],'kx')
 	    x = n.arange(0.,max(max(strain),new_strain)+0.001,0.001)
 	    y = p[0]*x**2 + p[1]*x + p[2]
@@ -272,14 +296,14 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     
     # valence band DOS masses
     new_valdosmass = []
-    if plot_fit :
+    if plot_fit:
 	plt.figure(7)
 	plt.title("Valence DOS (inverse) mass fit")
 	plt.xlabel("Strain")
-    for j in range(len(mat_prop["0.00"]["valdosmass"])) :
+    for j in range(len(mat_prop["0.00"]["valdosmass"])):
 	p = n.polyfit(strain,1./valdosmass[:,j],2)
 	new_valdosmass.append( 1./(p[0]*new_strain**2  + p[1]*new_strain + p[2]))
-	if plot_fit :
+	if plot_fit:
 	    plt.plot(strain,1./valdosmass[:,j],'kx')
 	    x = n.arange(0.,max(max(strain),new_strain)+0.001,0.001)
 	    y = p[0]*x**2 + p[1]*x + p[2]
@@ -288,14 +312,14 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     
     # conduction band DOS masses
     new_conddosmass = []
-    if plot_fit :
+    if plot_fit:
 	plt.figure(8)
 	plt.title("Conduction DOS (inverse) mass fit")
 	plt.xlabel("Strain")
-    for j in range(len(mat_prop["0.00"]["conddosmass"])) :
+    for j in range(len(mat_prop["0.00"]["conddosmass"])):
 	p = n.polyfit(strain,1./conddosmass[:,j],2)
 	new_conddosmass.append(1./(p[0]*new_strain**2  + p[1]*new_strain + p[2]))
-	if plot_fit :
+	if plot_fit:
 	    plt.plot(strain,1./conddosmass[:,j],'kx')
 	    x = n.arange(0.,max(max(strain),new_strain)+0.001,0.001)
 	    y = p[0]*x**2 + p[1]*x + p[2]
@@ -313,10 +337,10 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
 	plt.close("all")
 	plt.ioff()
     
-    # it shoulkd never happen as it should be tested before hand
-    for key in mat_prop.keys() :
-	if "doping" not in key :
-	    if float(key) == new_strain :
+    # it should never happen as it should be tested before hand
+    for key in mat_prop.keys():
+	if "doping" not in key:
+	    if float(key) == new_strain:
 		mat_prop[str(new_strain)] = mat_prop[key]
 		mat_prop[str(new_strain)+"_n_deltadoping"] = {}
 		mat_prop[str(new_strain)+"_n_deltadoping"]["ndoping"] = mat_prop[key]["pol_charge"]
@@ -324,74 +348,23 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
 		mat_prop[str(new_strain)+"_p_deltadoping"]["ndoping"] = -mat_prop[key]["pol_charge"]
 		return None
 		
-    #updating the dictionary passed as an argument
+    # updating the dictionary passed as an argument
     mat_prop[str(new_strain)] = new_strain_prop
     
-    #also adding delta dopings
-    #creating n_deltadoping
+    # also adding delta dopings
+    # creating n_deltadoping
     mat_prop[str(new_strain)+"_n_deltadoping"] = {}
     mat_prop[str(new_strain)+"_n_deltadoping"]["ndoping"] = mat_prop[str(new_strain)]["pol_charge"]
-    #creating p_deltadoping
+    # creating p_deltadoping
     mat_prop[str(new_strain)+"_p_deltadoping"] = {}
     mat_prop[str(new_strain)+"_p_deltadoping"]["ndoping"] = -mat_prop[str(new_strain)]["pol_charge"]
 	
     
-def read_calculation_input() :
-    """
-    Read the calculation input file and returns the input dictionary
-    """
-    
-    try:
-        with open(calc_input) as f:
-            input_dict = json.load(f)
-    except IOError:
-	print >> sys.stderr, ("Error: The calculation input json file (%s) passed as argument does not exist" % calc_input)
-	sys.exit(1)
-    
-    return input_dict
-
-
-#Simulation specific parameters
-#================================================================================================================
-
-mat_properties, a_lat, b_lat = read_input_materials_properties()
-input_dict = read_calculation_input()
-
-#Smearing, if yes how much ?
-smearing = input_dict["smearing"]
-KbT = input_dict["KbT"]*13.6 #from Ry to eV
-beta_eV = 1./KbT
-
-#calculation type
-calculation_type = input_dict["calculation"]
-
-#folder where the output data will be printed
-out_folder = input_dict["out_dir"]
-if out_folder not in os.listdir("../"):
-    os.system("mkdir ../"+out_folder)
-
-#max number of step for each self-consistent cycle
-max_steps = input_dict["max_iteration"]
-
-#do we plot the fits for new strains ?
-plot_fit = input_dict["plot_fit"]
-
-#Defining generalities
-#================================================================================================================
-
-#hbar^2/m0 in units of eV*ang*ang
-HBAR2OVERM0=7.61996163
-# periodicity, should remain true in this case
-is_periodic = True
-
-# Small threshold to check for charge neutrality
-small_threshold = 1.e-6
-
-
-#The general classes and methods
-
 class Slab(object):
-    def __init__(self,layers,materials_properties = mat_properties):
+    """
+    General class to represent a system composed of multiple stripes
+    """
+    def __init__(self, layers, materials_properties):
         """
         Pass a suitable xgrid (containing the sampling points in units of angstroms) and
         a (in angstroms)
@@ -469,7 +442,7 @@ class Slab(object):
         self._conddosmass = n.zeros((self._ncond_min,len(self._xgrid)))
         
         # conduction band
-        for i in range(self._ncond_min) :
+        for i in range(self._ncond_min):
             last_idx = 0
             for mat, grid_piece in zip(materials, xgrid_pieces):
                 if len(grid_piece)!=0: # skip delta dopings
@@ -479,7 +452,7 @@ class Slab(object):
                 last_idx += len(grid_piece)
 
         # valence band
-        for j in range(self._nval_max) :
+        for j in range(self._nval_max):
             last_idx = 0
             for mat, grid_piece in zip(materials, xgrid_pieces):
                 if len(grid_piece)!=0: # skip delta dopings
@@ -529,7 +502,7 @@ class Slab(object):
     def get_computing_times(self):
 	return self._time_Poisson, self._time_Fermi, self._time_Hami
     
-    def update_computing_times(self,process,value) :
+    def update_computing_times(self,process,value):
 	"""
 	updates the time spent on a numerical process (string) either "Fermi", "Hami", "Poisson"
 	"""
@@ -537,7 +510,7 @@ class Slab(object):
 	    self._time_Fermi += value
 	elif process == "Poisson":
 	    self._time_Poisson += value
-	elif process == "Hami" :
+	elif process == "Hami":
 	    self._time_Hami += value
 	else:
 	    warnings.warn(process+" is not a valid process for performance monitoring")
@@ -556,9 +529,7 @@ class Slab(object):
         Both free_el_density and free_holes_density should be positive
         
         Return True upon convergence
-        """
-        import schrpoisson_wire as spw        
-        
+        """        
         self._counter += 1
         self._Ef[self._counter%2] = e_fermi
         
@@ -586,7 +557,7 @@ class Slab(object):
 	
         new_V -= np.mean(new_V)
         
-        if self._counter == 1 :
+        if self._counter == 1:
 			self._max_ind = n.argmax(new_V)
 		
         if zero_elfield:
@@ -594,7 +565,7 @@ class Slab(object):
             self._slope = (new_V[-1] - new_V[0])/(self._xgrid[-1] - self._xgrid[0])
             new_V -= self._slope*self._xgrid
         else:
-			self._slope = 0.
+            self._slope = 0.
                 
         #we want ot avoid oscillations in converging algorithm
         #one has to stock new_V for comparison purposes
@@ -611,10 +582,10 @@ class Slab(object):
             if self.max_step_size <= 0.1*V_conv_threshold:
 				self.max_step_size = 0.1*V_conv_threshold
             
-        else :
+        else:
             self._subcounter += 1
         
-        if self._subcounter == 20 :
+        if self._subcounter == 20:
             self.max_step_size *= 1.4
             self._subcounter = 0
                     
@@ -623,7 +594,7 @@ class Slab(object):
       
         #convergence check
         self._over = False
-        if current_max_step_size < V_conv_threshold :
+        if current_max_step_size < V_conv_threshold:
 			start_t = time.time()
 			if is_periodic:
 				check_V = -1.*spw.periodic_recursive_poisson(self._xgrid,total_charge_density,self._alpha,max_iteration)[0] # minus 1 because function returns electrostatic potential, not energy
@@ -634,11 +605,11 @@ class Slab(object):
 			self._time_Poisson += end_t-start_t
 			check_val = n.max(n.abs(check_V-self._V))
 			self._indicator[self._counter%2] = check_V[self._max_ind]-self._V[self._max_ind]
-			if check_val > 5*V_conv_threshold :
+			if check_val > 5*V_conv_threshold:
 				current_max_step_size = check_val
 				step = check_V - self._V
 				#self.max_step_size *= 0.5
-			else :
+			else:
 					
 				self._over = True
 
@@ -646,7 +617,7 @@ class Slab(object):
 			
         print 'convergence param:', current_max_step_size	
         
-        if current_max_step_size != 0 and  self._over == False :
+        if current_max_step_size != 0 and  self._over == False:
 			#self._V += step * min(self.max_step_size, current_max_step_size) #/ (current_max_step_size)
 			self._V += step * self.max_step_size
 			self._old_V = self._V.copy()
@@ -654,16 +625,16 @@ class Slab(object):
 			self._V = new_V
 			self._old_V = self._V.copy()
 		
-        elif self._over == True :
+        elif self._over == True:
             self._V = self._old_V
-            print "Final convergence parameter : ", check_val
+            print "Final convergence parameter: ", check_val
             self._finalV_check = check_val
 		
         if n.abs(self._Ef[0]-self._Ef[1]) <= Ef_conv_threshold and current_max_step_size < 10*V_conv_threshold:
             self._E_count += 1
             
-            if self._E_count  == 4 :
-                print "Convergence of Fermi energy : ", n.abs(self._Ef[0]-self._Ef[1])
+            if self._E_count  == 4:
+                print "Convergence of Fermi energy: ", n.abs(self._Ef[0]-self._Ef[1])
                 current_max_step_size = 0.1*V_conv_threshold # froced convergence if that happens 4 times in a row
                 if is_periodic:
                     check_V = -1.*spw.periodic_recursive_poisson(self._xgrid,total_charge_density,self._alpha,max_iteration)[0] # minus 1 because function returns electrostatic potential, not energy
@@ -671,9 +642,9 @@ class Slab(object):
                 else:
                     check_V = -1.*spw.nonperiodic_recursive_poisson(self._xgrid,total_charge_density,self._alpha,max_iteration)[0]
                 check_val = n.max(n.abs(check_V-self._V))
-                print "Final convergence parameter : ", check_val
+                print "Final convergence parameter: ", check_val
                 self._finalV_check = check_val
-        else :
+        else:
 			self._E_count = 0    
        
         self._finalE_check = n.abs(self._Ef[0]-self._Ef[1])
@@ -701,7 +672,7 @@ class Slab(object):
         """
         # need dimensions to agree
         V = n.zeros((self._ncond_min,len(self._xgrid)))
-        for i in range(self._ncond_min) :
+        for i in range(self._ncond_min):
 			V[i,:] = self._V
         return self._condband + V
 
@@ -711,7 +682,7 @@ class Slab(object):
         """
         # need dimensions to agree
         V = n.zeros((self._nval_max,len(self._xgrid)))
-        for i in range(self._nval_max) :
+        for i in range(self._nval_max):
 			V[i,:] = self._V
         return self._valband + V
         
@@ -730,8 +701,8 @@ class Slab(object):
     
 def MV_smearing(E,beta,mu):
     """
-    Marzari Vanderbilt smearing function to be integrated in conjuction with the density of states
-    Carefull units of beta,E and mu must be consistent
+    Marzari-Vanderbilt smearing function to be integrated in conjuction with the density of states
+    Be careful: units of beta, E and mu must be consistent
     """
     
     return 0.5*scipy.special.erf(-beta*(E-mu)-1./n.sqrt(2)) + 1./n.sqrt(2.*n.pi)*n.exp(-(beta*(E-mu)+1./n.sqrt(2))**2) + 0.5
@@ -766,7 +737,7 @@ def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_co
     avg_mass = np.zeros((1,3))
     
     # All the conduction band minima have to be taken into account with the appropriate degeneracy
-    for j in range(len(degen)) : #number of minima
+    for j in range(len(degen)): #number of minima
         deg = degen[j]
 	if j > 0 and avg_eff_mass == True:
 	    avg_mass = n.append(avg_mass,[[0.,0.,0.]],axis=0) # so that bands are separated by a line of zeros
@@ -778,7 +749,7 @@ def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_co
             square_norm = sum((state)**2)
             # I average the inverse of the effective mass
             # Both state and c_mass_array should have the same length
-            # NOT SURE: square_norm or sqrt(square_norm) ? AUGU : I'm pretty sure it's square_norm and I changed it
+            # NOT SURE: square_norm or sqrt(square_norm) ? AUGU: I'm pretty sure it's square_norm and I changed it
             averaged_eff_mass = 1./(sum(state**2 / c_mass_array[j]) / square_norm)
 	    if avg_eff_mass == True:
 		avg_mass = n.append(avg_mass,[[state_energy,state_energy-e_fermi,averaged_eff_mass]],axis=0)
@@ -792,9 +763,9 @@ def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_co
 		contrib[j] += sum(deg * D * sqrt(averaged_eff_mass) * 2. * sqrt(e_fermi - state_energy) * (
 		    state**2 / square_norm))
 	   
-	    elif smearing and state_energy-e_fermi < energy_range : # more than enough margin
+	    elif smearing and state_energy-e_fermi < energy_range: # more than enough margin
 		# Need to numerically integrate the density of state times the occupation given by MV_smearing
-		# to compute the integral, one uses the trick explained there to avoid singularities : http://math.stackexchange.com/questions/1351734/numerical-integration-of-divergent-function
+		# to compute the integral, one uses the trick explained there to avoid singularities: http://math.stackexchange.com/questions/1351734/numerical-integration-of-divergent-function
 		n_int = 10000. # number of intervals
 		# change of variable E = state_energy + t**2
 		dt = n.sqrt(energy_range)/n_int 
@@ -811,11 +782,11 @@ def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_co
 		
 		
     # Up to now, el_density is in 1/ang; we want it in 1/cm
-    if band_contribution == False :
+    if band_contribution == False:
         return el_density * 1.e8
-    elif band_contribution == True and avg_eff_mass == False :
+    elif band_contribution == True and avg_eff_mass == False:
         return el_density * 1.e8, contrib  * 1.e8
-    else :
+    else:
 	return el_density * 1.e8, contrib  * 1.e8, avg_mass
 
 def update_doping(materials_props,material,doping):
@@ -859,7 +830,7 @@ def get_hole_density(v_states, e_fermi, v_mass_array, npoints, degen, band_contr
     avg_mass = np.zeros((1,3))
     
     contrib = n.zeros(len(degen))
-    for j in range(len(degen)) :
+    for j in range(len(degen)):
         deg = degen[j]
 	if j > 0 and avg_eff_mass == True:
 	    avg_mass = n.append(avg_mass,[[0.,0.,0.]],axis=0) # so that bands are separated by a line of zeros
@@ -907,7 +878,7 @@ def get_hole_density(v_states, e_fermi, v_mass_array, npoints, degen, band_contr
 		h_density += n.trapz(g_times_f,dx=delta_E) * (state**2 / square_norm)
 		contrib[j] += sum(n.trapz(g_times_f,dx=delta_E) * (state**2 / square_norm))
 		""" 
-    if band_contribution == False :
+    if band_contribution == False:
         return h_density * 1.e8
     elif band_contribution == True and avg_eff_mass == False:
         return h_density * 1.e8, contrib * 1.e8
@@ -951,7 +922,7 @@ def find_efermi(c_states, v_states, c_mass_array, v_mass_array, c_degen, v_degen
                              net_l, net_r, target_net_free_charge,ef_l, ef_r))
     absdiff = 10*charge_precision
     en_diff = ef_r - ef_l
-    while en_diff > energy_precision : 
+    while en_diff > energy_precision: 
         ef = (ef_l + ef_r)/2.
         electrons = n.sum(get_electron_density(c_states, ef, c_mass_array,npoints,c_degen))
         holes = n.sum(get_hole_density(v_states, ef, v_mass_array,npoints,v_degen))
@@ -966,7 +937,7 @@ def find_efermi(c_states, v_states, c_mass_array, v_mass_array, c_degen, v_degen
             ef_l = ef
         en_diff =  ef_r - ef_l   
         #check on the charge precision
-        if  absdiff > charge_precision :
+        if  absdiff > charge_precision:
             #need to go over the loop once more
             en_diff = 10*energy_precision
     return ef #(ef_r + ef_l)/2. it changes everything since the bissection algorithm worked for ef and not for (ef_r + ef_l)/2.
@@ -1034,7 +1005,7 @@ def get_conduction_states_p(slab):
         raise AssertionError("Wrong indices difference in j1/2_lists (cond)!")
 	
 	#Need to loop over all conduction band minima and construct their Hamiltonian
-    for i in range(slab._ncond_min) : 
+    for i in range(slab._ncond_min): 
 	
         # On the diagonal, the potential: sum of the electrostatic potential + conduction band profile
         # This is obtained with get_conduction_profile()
@@ -1081,7 +1052,7 @@ def get_valence_states_p(slab):
     """
     See discussion in get_conduction_states, plus comments here for what has changed
     
-    NOTE: _p stands for the non-periodic version
+    NOTE: _p stands for the periodic version
     """
     more_bands_energy = 0.2 # How many eV to to below the bottom of the valence band
     
@@ -1151,7 +1122,7 @@ def get_conduction_states_np(slab):
     # H[0,1:] is the first upper diagonal
     H = n.zeros((slab._ncond_min,2, slab.npoints))
     
-    for i in range(slab._ncond_min) : 
+    for i in range(slab._ncond_min): 
             
         # On the diagonal, the potential: sum of the electrostatic potential + conduction band profile
         # This is obtained with get_conduction_profile()
@@ -1196,7 +1167,7 @@ def get_valence_states_np(slab):
     
     H = n.zeros((slab._nval_max,2, slab.npoints))
     
-    for i in range(slab._nval_max) :
+    for i in range(slab._nval_max):
         
         H[i,1,:] = slab.get_valence_profile()[i]
         min_energy = H[i,1,:].min() - more_bands_energy
@@ -1221,18 +1192,15 @@ def get_valence_states_np(slab):
     return res
   
 
-def run_simulation(slab, max_steps, nb_states) :
+def run_simulation(slab, max_steps, nb_states):
     """
-    This function launches the self-consistant Schroedinger-Poisson calculations and returns all the relevant data
+    This function launches the self-consistant Schroedinger--Poisson calculations and returns all the relevant data
     """ 
-    
     it = 0
 
     # I don't want the terminal to be flooded with every single step
-    import sys
-    import os
-    
-    sys.stdout = open(os.devnull, "w")
+    if reduce_stdout_output:
+        sys.stdout = open(os.devnull, "w")
     
     try:
         converged = False
@@ -1265,39 +1233,39 @@ def run_simulation(slab, max_steps, nb_states) :
                 break
     except KeyboardInterrupt:
         pass
-    sys.stdout = sys.__stdout__
+    if reduce_stdout_output:
+        sys.stdout = sys.__stdout__
     if not converged:
         print "****** WARNING! Calculation not converged ********"    
-    
     
     #should print all results at each step in files
     el_density, el_contrib, avg_cond_mass = get_electron_density(c_states, e_fermi, slab._conddosmass, slab.npoints, slab._conddegen, band_contribution = True, avg_eff_mass = True)
     hole_density, hole_contrib, avg_val_mass = get_hole_density(v_states, e_fermi, slab._valdosmass,slab.npoints, slab._valdegen, band_contribution = True, avg_eff_mass =True)
     tot_el_dens = n.sum(el_density)
     tot_hole_dens = n.sum(hole_density)
-    tot_el_dens_2 = tot_el_dens * b_lat*1.e-8 # in units of e/b, 
+    tot_el_dens_2 = tot_el_dens * b_lat*1.e-8 # in units of e/b
     tot_hole_dens_2 = tot_hole_dens * b_lat*1.e-8 # in units of e/b
     el_density_per_cm2 = el_density * 1./(delta_x*1.e-8) 
     hole_density_per_cm2 = hole_density * 1./(delta_x*1.e-8) 
     
     #contribution in %
-    if tot_el_dens != 0 : 
+    if tot_el_dens != 0: 
         el_contrib /= tot_el_dens
-    if tot_hole_dens != 0 :    
+    if tot_hole_dens != 0:    
         hole_contrib /= tot_hole_dens
-	#print "El contrib : ", el_contrib
-	#print "Hole contrib : ", hole_contrib
+	#print "El contrib: ", el_contrib
+	#print "Hole contrib: ", hole_contrib
 	
     matrix = [slab.get_xgrid(),ones(slab.npoints) * e_fermi]
     zoom_factor = 10. # To plot eigenstates
     
     # adding the potential profile of each band
 	
-    for k in range(slab._ncond_min) :
+    for k in range(slab._ncond_min):
 	i=0
 	matrix.append(slab.get_conduction_profile()[k])
         for w, v in c_states[k]:
-	    if i >= nb_states :
+	    if i >= nb_states:
 		break
             matrix.append(w + zoom_factor * abs(v)**2)
             matrix.append(ones(slab.npoints) * w)
@@ -1307,7 +1275,7 @@ def run_simulation(slab, max_steps, nb_states) :
 	j=0     
 	matrix.append(slab.get_valence_profile()[l])
         for w, v in v_states[l][::-1]:
-	    if j >= nb_states :
+	    if j >= nb_states:
 		break
             # Plot valence bands upside down
             matrix.append(w - zoom_factor * abs(v)**2)
@@ -1315,9 +1283,9 @@ def run_simulation(slab, max_steps, nb_states) :
             j+= 1
    
     #Keeping the user aware of the time spent on each main task
-    print "Total time spent solving Poisson equation : ", slab.get_computing_times()[0], " (s)"
-    print "Total time spent finding the Fermi level(s) : ", slab.get_computing_times()[1], " (s)"
-    print "Total time spent computing the electronic states : ", slab.get_computing_times()[2] , " (s)"
+    print "Total time spent solving Poisson equation: ", slab.get_computing_times()[0], " (s)"
+    print "Total time spent finding the Fermi level(s): ", slab.get_computing_times()[1], " (s)"
+    print "Total time spent computing the electronic states: ", slab.get_computing_times()[2] , " (s)"
     
     return [[it, slab._finalV_check, slab._finalE_check, delta_x, e_fermi,  tot_el_dens, tot_hole_dens ,tot_el_dens_2,tot_hole_dens_2 ],
 	    [matrix],
@@ -1326,57 +1294,86 @@ def run_simulation(slab, max_steps, nb_states) :
 	       
 if __name__ == "__main__":
     from pylab import *
-    
-    if calculation_type == "single_point" :
+
+    # Read files
+    try:
+        json_matprop = sys.argv[1]
+        calc_input = sys.argv[2]
+    except IndexError:
+        print >> sys.stderr, ("Pass two parameters, containing the JSON files with the materials properties and the calculation input")
+        sys.exit(1)
+    mat_properties, a_lat, b_lat = read_input_materials_properties(json_matprop)
+    input_dict = read_calculation_input(calc_input)
+
+    # Check and set smearing
+    smearing = input_dict["smearing"]
+    KbT = input_dict["KbT"]*13.6 # from Ry to eV, most often this precision is sufficient...
+    beta_eV = 1./KbT
+
+    #calculation type
+    calculation_type = input_dict["calculation"]
+
+    #folder where the output data will be printed
+    out_folder = input_dict["out_dir"]
+    if out_folder not in os.listdir(os.curdir):
+        os.mkdir(out_folder)
+
+    #max number of step for each self-consistent cycle
+    max_steps = input_dict["max_iteration"]
+
+    #do we plot the fits for new strains ?
+    plot_fit = input_dict["plot_fit"]
+  
+    if calculation_type == "single_point":
 	print "\n"
 	print "Starting single-point calculation..."
 	#updating the mat_properties dict in case there are non registered strains in the setup
 	plotting_the_fit = False
-	if plot_fit == True :
+	if plot_fit == True:
 	    plotting_the_fit = True
-	for key in input_dict["setup"] :
+	for key in input_dict["setup"]:
 	    update_mat_prop_for_new_strain(mat_prop = mat_properties, new_strain = input_dict["setup"][key]["strain"], plot_fit = plotting_the_fit)
 	    plotting_the_fit = False
 	    
 	#constructing the slab
-	if len(input_dict["setup"]) < 3 :
+	if len(input_dict["setup"]) < 3:
 	    print >> sys.stderr, ("Error: There must be at least three entries in the setup subdictionary of json file '%s'" %calc_input)
 	    sys.exit(1)
 	    
 	#the first and last layers must be entered manually
 	layers_p = []
 	layers_p.append((str(input_dict["setup"]["slab1"]["strain"]),input_dict["setup"]["slab1"]["width"]))
-	if input_dict["setup"]["slab1"]["polarization"] == "positive" :
+	if input_dict["setup"]["slab1"]["polarization"] == "positive":
 	    layers_p.append((str(input_dict["setup"]["slab1"]["strain"])+"_p_deltadoping",0.0))
-	else : 
+	else: 
 	    layers_p.append((str(input_dict["setup"]["slab1"]["strain"])+"_n_deltadoping",0.0))
 	for i in range(len(input_dict["setup"])-2):
 	    slab_key = "slab"+str(i+2)
 	    #delta doping before layer
-	    if input_dict["setup"][slab_key]["polarization"] == "positive" :
+	    if input_dict["setup"][slab_key]["polarization"] == "positive":
 		layers_p.append((str(input_dict["setup"][slab_key]["strain"])+"_n_deltadoping",0.0))
-	    else : 
+	    else: 
 		layers_p.append((str(input_dict["setup"][slab_key]["strain"])+"_p_deltadoping",0.0))
 	    
 	    #actual layer
 	    layers_p.append((str(input_dict["setup"][slab_key]["strain"]),input_dict["setup"][slab_key]["width"]))
 	    
 	    #delta doping after the layer
-	    if input_dict["setup"][slab_key]["polarization"] == "positive" :
+	    if input_dict["setup"][slab_key]["polarization"] == "positive":
 		layers_p.append((str(input_dict["setup"][slab_key]["strain"])+"_p_deltadoping",0.0))
-	    else : 
+	    else: 
 		layers_p.append((str(input_dict["setup"][slab_key]["strain"])+"_n_deltadoping",0.0))
 	    
 	#the last slab
 	slab_key = "slab"+str(len(input_dict["setup"]))
-	if input_dict["setup"][slab_key]["polarization"] == "positive" :
+	if input_dict["setup"][slab_key]["polarization"] == "positive":
 	    layers_p.append((str(input_dict["setup"][slab_key]["strain"])+"_n_deltadoping",0.0))
-	else : 
+	else: 
 	    layers_p.append((str(input_dict["setup"][slab_key]["strain"])+"_p_deltadoping",0.0))
 	layers_p.append((str(input_dict["setup"][slab_key]["strain"]),input_dict["setup"][slab_key]["width"]))
 	
 	delta_x = input_dict["delta_x"]
-	slab = Slab(layers_p)
+	slab = Slab(layers_p, materials_properties=mat_properties)
 	
 	res = run_simulation(slab = slab, max_steps = max_steps, nb_states = input_dict["nb_of_states_per_band"])
 	print "\n"
@@ -1388,20 +1385,20 @@ if __name__ == "__main__":
 	print "\n"
 	
 	#writing results into files
-	print"General information printed in: ../"+out_folder+'/general_info.txt'
-	np.savetxt('../'+out_folder+'/general_info.txt',np.atleast_2d(res[0]),header='1: Nb of iterations, 2: Voltage conv param, 3: Fermi energy conv param, 4: delta_x (ang),\
+	print"General information printed in: "+out_folder+'/general_info.txt'
+	np.savetxt(out_folder+'/general_info.txt',np.atleast_2d(res[0]),header='1: Nb of iterations, 2: Voltage conv param, 3: Fermi energy conv param, 4: delta_x (ang),\
 	5: Fermi energy (eV), 6: Total free electron density (1/cm), 7: Total free holes density (1/cm), 8: Total free electron density (1/b), 9: Total free holes density (1/b)')
 	
-	print"Band data printed in: ../"+out_folder+'/band_data.txt'
-	np.savetxt('../'+out_folder+'/band_data.txt',np.transpose(res[1][0]),header="1: position (ang), 2: Fermi energy (eV), the rest is organized as follow for each band:\
+	print"Band data printed in: "+out_folder+'/band_data.txt'
+	np.savetxt(out_folder+'/band_data.txt',np.transpose(res[1][0]),header="1: position (ang), 2: Fermi energy (eV), the rest is organized as follow for each band:\
 	\n  First column is the potential profile of the band (in eV). The next pairs of columns are the wave function and the energy (eV) of the band's states")
 	
-	print"Free cariers density plotted in: ../"+out_folder+'/density_profile.txt'
-	np.savetxt('../'+out_folder+'/density_profile.txt',np.transpose(res[2]),header="1: position (ang), 2: Free electrons density (1/cm^2), 3: Free holes density (1/cm^2) ")
+	print"Free cariers density plotted in: "+out_folder+'/density_profile.txt'
+	np.savetxt(out_folder+'/density_profile.txt',np.transpose(res[2]),header="1: position (ang), 2: Free electrons density (1/cm^2), 3: Free holes density (1/cm^2) ")
 	print"\n"
 	
 	
-    elif calculation_type == "map" :
+    elif calculation_type == "map":
 	print "\n"
 	print "Starting map calculation..."
 	print "\n"
@@ -1416,10 +1413,10 @@ if __name__ == "__main__":
 	
 	#updating the materials properties for the new strains
 	plotting_the_fit = False
-	if plot_fit == True :
+	if plot_fit == True:
 	    plotting_the_fit = True
 	    
-	for strain in strain_array :
+	for strain in strain_array:
 	    update_mat_prop_for_new_strain(mat_prop = mat_properties, new_strain = strain, plot_fit = plotting_the_fit)
 	    plotting_the_fit = False
 	
@@ -1427,18 +1424,18 @@ if __name__ == "__main__":
 	data = np.zeros((strain_array.size*width_array.size,12))
 	
 	i = 0
-	for strain in strain_array :
-	    for width in width_array :
+	for strain in strain_array:
+	    for width in width_array:
 	    
 		layers_p = [("0.00",width/2.),(str(strain)+"_n_deltadoping",0.0), (str(strain),width*(1.+strain)), 
 			    (str(strain)+"_p_deltadoping",0.0), ("0.00",width/2.)]
 		
 		#set delta_x so that the same number of steps are taken for each situation
 		delta_x = width * (2. + strain)/input_dict["nb_of_steps"]
-		if delta_x > input_dict["upper_delta_x_limit"] :
+		if delta_x > input_dict["upper_delta_x_limit"]:
 		    delta_x = input_dict["upper_delta_x_limit"]
 		
-		slab = Slab(layers_p)
+		slab = Slab(layers_p, materials_properties=mat_properties)
 		
 		print "Starting single-point calculation with strain = %s and width = %s ..." %(strain,width)
 		res = run_simulation(slab = slab, max_steps = max_steps, nb_states = 10) #arbitrary nb of states since not of interest here
@@ -1450,14 +1447,14 @@ if __name__ == "__main__":
 	#saving the data in a file
 	
 	
-	print "Data printed in file: ../"+out_folder+'/map_data.txt'
-	np.savetxt("../"+out_folder+'/map_data.txt', data, header="1: strain, 2: width of unstrained slab (ang), 3: total electron density (1/b), 4: total holes density (1/b)\
+	print "Data printed in file: "+out_folder+'/map_data.txt'
+	np.savetxt(out_folder+'/map_data.txt', data, header="1: strain, 2: width of unstrained slab (ang), 3: total electron density (1/b), 4: total holes density (1/b)\
 	 5: width of the strained slab (ang), 6: nb of iterations, 7: potential conv param, 8: Fermi energy conv param, 9: delta_x (ang), 10: Fermi energy (eV)\
 	  11: total electron density (1/cm), 12: total holes density (1/cm)")
 	print "\n"
 		
     else:
-	print >> sys.stderr ("The Calculation must either be 'single-point' or 'map' ")
+	print >> sys.stderr ("The Calculation must either be 'single-point' or 'map'")
 
     
 
