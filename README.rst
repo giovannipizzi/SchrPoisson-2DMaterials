@@ -1,6 +1,3 @@
-============
-Introduction
-============
 ###########################################
 Schrödinger-Poisson solver for 2D materials
 ###########################################
@@ -8,6 +5,11 @@ Schrödinger-Poisson solver for 2D materials
 .. contents::
 
 .. section-numbering::
+
+============
+Introduction
+============
+
 
 ===========
 How to cite
