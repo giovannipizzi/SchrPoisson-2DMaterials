@@ -20,7 +20,7 @@ How to cite
 ===========
 If you use this code in your work, please cite the following paper:
 
-- \A. Bussy, G. Pizzi, M. Gibertini, *Strain-induced polar discontinuities in 2D materials from combined first-principles and Schrödinger-Poisson simulations*, to be submitted.
+- \A. Bussy, G. Pizzi, M. Gibertini, *Strain-induced polar discontinuities in 2D materials from combined first-principles and Schrödinger-Poisson simulations*, `arXiv:1705:01303`_ (2017).
 
 ==============
 How to compile
@@ -59,3 +59,4 @@ description of the output files produced by the code.
 
 .. _PDF documentation: https://github.com/giovannipizzi/schrpoisson_2dmaterials/raw/master/docs/compiled_output/schrpoisson_2dmaterials_docs.pdf
 
+.. _arXiv:1705:01303: http://arxiv.org/abs/1705.01303
