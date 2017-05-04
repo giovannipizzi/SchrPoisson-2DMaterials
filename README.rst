@@ -65,6 +65,6 @@ The code is released open-source under a MIT license (see `LICENSE.txt`_ file).
 
 .. _PDF documentation: https://github.com/giovannipizzi/schrpoisson_2dmaterials/raw/master/docs/compiled_output/schrpoisson_2dmaterials_docs.pdf
 
-.. _arXiv:1705:01303: http://arxiv.org/abs/1705.01303
+.. _arXiv:1705.01303: http://arxiv.org/abs/1705.01303
 
 .. _LICENSE.txt: https://github.com/giovannipizzi/schrpoisson_2dmaterials/raw/master/LICENSE.txt
