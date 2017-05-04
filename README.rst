@@ -47,9 +47,9 @@ second with the code input flags.
 
 You will find some example input files in the ``input_examples`` subfolder.
 
-==============================
-Description of the input files
-==============================
+=========================================
+Description of the input and output files
+=========================================
 The two input files must be in JSON format and contain all the input
 needed to specify the system properties and the input flags.
 
