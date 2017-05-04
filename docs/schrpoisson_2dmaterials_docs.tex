@@ -63,21 +63,24 @@
 
 \section{Introduction}
 
-This code aims at self-consistently solving the coupled Schroedinger--Poisson equations in 2D materials. More precisely, in the current implementation it is designed to simulate nanosheets of a single material with regions of different strains. The Schroedinger equation is in 1D, meaning that the strain can vary on a single axis ($x$), as illustrated in Figure~\ref{fig:example1}. Moreover, the material is assumed to be infinite in the $y$-direction and periodic in the $x$-direction.
+This code aims at self-consistently solving the coupled Schr\"odinger--Poisson equations in 2D materials. More precisely, in the current implementation it is designed to simulate nanosheets of a single material with regions of different strains. The Schr\"odinger equation is in 1D, meaning that the strain can vary on a single axis ($x$), as illustrated in Fig.~\ref{fig:example1}. Moreover, the material is assumed to be infinite in the $y$ direction and periodic in the $x$ direction.
 
-Two types of calculations can be made: \emph{single-point} or \emph{map}. The former (\emph{single-point} simulates a specific setup described in an input file (see Sec.~\ref{sec:input}) to produce a band profile and/or a carrier density profile. This is a useful tool for experiments as it allows to simulate any strain profile. The \emph{map} calculation type, instead, screens over different setups of strained/unstrained material to investigate, e.g., insulator-to-conductor phase transitions.
+Two types of calculations can be performed: \emph{single-point} or \emph{map}. The former (\emph{single-point}) simulates a specific setup as described in an input file provided by the user (see Sec.~\ref{sec:input}) to produce a band profile and/or a carrier density profile. This is a useful tool for experiments as it allows to simulate any strain profile. The \emph{map} calculation type, instead, screens over different setups of strained/unstrained material to investigate, e.g., metal-insulator phase transitions.
 
-This code uses a multi-scale approach, meaning that the materials properties must be provided as input, and typically they come from DFT calculations. These quantities include effective masses and polarization charges for different strains. The properties for at least 4 or 5 strains should be provided for accurate fitting. It is also not recommended to extrapolate strains larger than those coming from DFT, as the trends could change.
+This code uses a multi-scale approach, meaning that the materials properties must be provided as input, typically calculated from DFT calculations. These quantities include effective masses and polarization charges for different strains. The properties for at least 4 or 5 strains should be provided for accurate fitting. It is also not recommended to extrapolate strains larger than those coming from DFT, as the trends could change.
 
 \begin{figure} [h]
 \begin{center}
-\captionsetup{width=0.8\textwidth}
+\captionsetup{width=0.95\textwidth}
 \centerline{\includegraphics[width=12cm,angle=0]{img/example1}}
-\caption{Example of simulation setup: Periodic alternation of strained and unstrained regions of a given material.}
+\caption{\small Example of simulation setup: periodic alternation of strained and unstrained regions of a given material.}
 \label{fig:example1} 
 \end{center}
 \end{figure}
 
+\section{How to cite}
+If you use this code in your work, please cite the following paper: \\
+A. Bussy, G. Pizzi, M. Gibertini, \emph{Strain-induced polar discontinuities in 2D materials from combined first-principles and Schr\"odinger-Poisson simulations}, \underline{\href{http://arxiv.org/abs/1705.01303}{arXiv:1705.01303}} (2017).
 
 \section{Compiling and running up the code}
 The code is distributed in the \texttt{code} folder, and consists of three main files.
@@ -92,7 +95,7 @@ After running \texttt{make}, the main python code (\texttt{2Dschrpoisson.py}) is
 \texttt{python 2Dschrpoisson.py \{material\_properties\}.json  \{calc\_input\}.json}
 \end{quote}
 
-Note that, if the two json files are not in the same folder, you need to specify the full (relative or absolute) path to them.
+Note that if the two input json files are not in the same folder, you need to specify the full path to them.
 
 \section{\label{sec:input}Input}
 Two input files are necessary to every calculation: one containing the materials properties and the other the calculation setup. 
@@ -103,7 +106,7 @@ The file should contain a dictionary, where the key is a string representation o
 float value, and the value should be a dictionary with a given number of keys, as shown in
 the example below.
 
-The following example is taken from the \texttt{SnSe\_example.json} file in the \texttt{input\_example} folder. Note that the properties of the unstrained material are \emph{mandatory} and must be provided under the ``\texttt{0.00}'' key. Below the example, there are some explanatory comments.
+The following example is taken from the \texttt{SnSe\_example.json} file in the \texttt{input\_examples} folder. Note that the properties of the unstrained material are \emph{mandatory} and must be provided under the ``\texttt{0.00}'' key. After the example we provide some explanatory comments.
 
 \subsubsection*{File example}
 
@@ -165,11 +168,11 @@ The following example is taken from the \texttt{SnSe\_example.json} file in the 
 
 \item[\texttt{x\_lat}, \texttt{y\_lat}] The lattice parameters of the unit cell in \angstrom. \emph{Only needed for the unstrained material.}
 
-\item[\texttt{polarization\_charge}] Polarization charge at the edge of the material in units of electron per unit cell width, \textit{i.e.} e/$b$.
+\item[\texttt{polarization\_charge}] Polarization charge at the edge of the material in units of electron per unit cell width, \textit{i.e.}, e/$b$.
 
 \item[\texttt{vacuum\_level}] Needed to align energy levels across the setup (in eV).
 
-\item[Energy extrema keys] They need to either contain the string \texttt{valence} or \texttt{conduction} (this is a requirement by the code). The assigned value is a subdictionary with the energy of the band extremum in eV (\texttt{energy}), the confinement mass (\texttt{conf\_mass}) and density of states (DOS) mass (\texttt{DOS\_mass}), that are respectively the effective masses in the $x$ and $y$ directions), and the degeneracy of the energy level in the first BZ (\texttt{degeneracy}).
+\item[Energy extrema keys] They need to either contain the string \texttt{valence} or \texttt{conduction} (this is a requirement by the code). The assigned value is a subdictionary with the energy of the band extremum in eV (\texttt{energy}), the confinement mass (\texttt{conf\_mass}) and density of states DOS mass (\texttt{DOS\_mass}) [that are respectively the effective masses in the $x$ and $y$ directions)] and the degeneracy of the energy level in the first BZ (\texttt{degeneracy}).
 \end{description}
 
 
@@ -227,9 +230,9 @@ The following examples can be found in the \texttt{input\_examples} folder. In t
 
 \item[\texttt{nb\_of\_states\_per\_band}] Useful to limit the size of the output data. In this example, only two quantum states per band (6 in total) will be reported
 
-\item[\texttt{delta\_x}] The size of the discretization step in space (\angstrom)
+\item[\texttt{delta\_x}] The size of the discretization step in real space (\angstrom)
 
-\item[\texttt{setup}] The value is a subdictionary with the description of each slab forming the setup. For each layer, one has to specify the \texttt{polarization} (\texttt{positive} or \texttt{negative}: positive if holes accumulate towards larger $x$), the \texttt{strain} of the material and the \texttt{width} of the slab (in \angstrom). There is no limit to the numbers of layers, but the keys must follow the syntax \texttt{slab\%d} where \texttt{\%d} should be replaced with the integer, starting from 1. It is not recommended to include strains higher than the largest one in the material properties file. 
+\item[\texttt{setup}] The value is a subdictionary with the description of each slab forming the setup. For each layer, one has to specify the \texttt{polarization} (\texttt{positive} or \texttt{negative}: positive if holes accumulate towards larger $x$), the \texttt{strain} of the material and the \texttt{width} of the slab (in \angstrom). There is no limit to the numbers of layers, but the keys must follow the syntax \texttt{slab\%d} where \texttt{\%d} should be replaced with a sequential integer, starting from 1. It is not recommended to include strains larger than those in the material properties file. 
 
 \textbf{Note}: it is also \emph{mandatory} that the first and the last slabs have identical strain, since the code does not cope with polarization charges at the edges of the cell.
 \end{description}

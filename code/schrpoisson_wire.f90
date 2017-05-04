@@ -1,6 +1,27 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! This file contains the main logic for calculating the potential due to a single
 !! wire and to an array of wires. These functions (that are the most expensive part
 !! of the code) are then called from python.
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! If you use this code in your work, please cite the following paper:
+!!
+!! A. Bussy, G. Pizzi, M. Gibertini, Strain-induced polar discontinuities 
+!! in 2D materials from combined first-principles and Schroedinger-Poisson 
+!! simulations, arXiv:1705.01303 (2017).
+!! 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! This code is released under a MIT license, see LICENSE.txt file in the main 
+!! folder of the code repository, hosted on GitHub at 
+!! https://github.com/giovannipizzi/schrpoisson_2dmaterials
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! FORTRAN code version: 1.0.0
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !==================================================================
 !==================NONPERIODIC FUNCTIONS===========================
@@ -501,7 +522,7 @@ subroutine periodic_recursive_poisson(x,rho_in,alpha,max_iteration,potential,rho
 
   ! convergence check
   call full_v_array_wire_periodic(x-0.5*h,rho_in+old_rho,V,n)
-  V(n) = V(1)	
+  V(n) = V(1)  
   !doing the same operations as before
   do i=2,n
      dV(i) = 1./h * (V(i)-V(i-1))

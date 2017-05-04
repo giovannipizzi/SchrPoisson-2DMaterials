@@ -5,4 +5,6 @@
 *.out
 *.ps
 *.dvi
+*.fls
+*.fdb_latexmk
 schrpoisson_2dmaterials_docs.pdf

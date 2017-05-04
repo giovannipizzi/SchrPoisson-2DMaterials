@@ -9,6 +9,17 @@ to the materials properties, and the second to the calculation input flags:
 
 Note that to run the code you need first to compile the fortran code using 
 'make'.
+
+
+If you use this code in your work, please cite the following paper:
+
+A. Bussy, G. Pizzi, M. Gibertini, Strain-induced polar discontinuities
+in 2D materials from combined first-principles and Schroedinger-Poisson
+simulations, arXiv:1705.01303 (2017).
+
+This code is released under a MIT license, see LICENSE.txt file in the main
+folder of the code repository, hosted on GitHub at
+https://github.com/giovannipizzi/schrpoisson_2dmaterials
 """
 import numpy as n
 import scipy
@@ -19,8 +30,6 @@ import os
 from operator import add
 import sys
 import json
-import matplotlib
-import matplotlib.pyplot as plt
 
 try:
     import schrpoisson_wire as spw        
@@ -29,6 +38,9 @@ except ImportError:
                       "To obtain it, you have to compile the Fortran code using f2py.\n"
                       "If you have f2py already installed, you will most probably need only to\n"
                       "run 'make' in the same folder as the code.")
+
+# Python code version
+__version__ = "1.0.0"
 
 
 #hbar^2/m0 in units of eV*ang*ang
@@ -162,6 +174,10 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     material properties dictionary is updated
     """
     
+    # Preliminary plot, if needed
+    if plot_fit:
+        import matplotlib.pyplot as plt
+
     # initializing arrays containing valence and conduction properties
     valenergies = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["valenergies"]))) # len(mat_prop)/3 because for each strain there are 2 delta doping
     condenergies = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["condenergies"])))
@@ -557,7 +573,7 @@ class Slab(object):
 
         self._time_Poisson += end_t-start_t
          
-        new_V -= np.mean(new_V)
+        new_V -= n.mean(new_V)
         
         if self._counter == 1:
             self._max_ind = n.argmax(new_V)
@@ -695,8 +711,8 @@ class Slab(object):
         conduction = self.get_conduction_profile()
         valence = self.get_valence_profile()
         
-        cond_min = np.min(conduction)
-        val_max = np.max(valence)
+        cond_min = n.min(conduction)
+        val_max = n.max(valence)
         
         return cond_min - val_max
 
@@ -730,13 +746,13 @@ def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_co
     # I rewrite it as g(E) = D * sqrt(meff/m0) / sqrt(E-E0)
     # where (meff/m0) is simply the effective mass in units of the electron free mass,
     # and D=sqrt(2) / pi / sqrt(HBAR2OVERM0) and will be in units of 1/ang/sqrt(eV)
-    D = n.sqrt(2.) / n.pi / sqrt(HBAR2OVERM0)
+    D = n.sqrt(2.) / n.pi / n.sqrt(HBAR2OVERM0)
 
     el_density = n.zeros(npoints)   
     
     contrib = n.zeros(len(degen))    
     
-    avg_mass = np.zeros((1,3))
+    avg_mass = n.zeros((1,3))
     
     # All the conduction band minima have to be taken into account with the appropriate degeneracy
     for j in range(len(degen)): #number of minima
@@ -760,9 +776,9 @@ def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_co
                 # At T=0, integrating from E0 to Ef the DOS gives
                 # D * sqrt(meff) * int_E0^Ef 1/(sqrt(E-E0)) dE =
                 # D * sqrt(meff) * 2 * sqrt(Ef-E0)   [if Ef>E0, else zero]
-                el_density += deg * D * sqrt(averaged_eff_mass) * 2. * sqrt(e_fermi - state_energy) * (
+                el_density += deg * D * n.sqrt(averaged_eff_mass) * 2. * n.sqrt(e_fermi - state_energy) * (
                     state**2 / square_norm)
-                contrib[j] += sum(deg * D * sqrt(averaged_eff_mass) * 2. * sqrt(e_fermi - state_energy) * (
+                contrib[j] += n.sum(deg * D * n.sqrt(averaged_eff_mass) * 2. * n.sqrt(e_fermi - state_energy) * (
                     state**2 / square_norm))
             
             elif smearing and state_energy-e_fermi < energy_range: # more than enough margin
@@ -778,9 +794,9 @@ def get_electron_density(c_states, e_fermi, c_mass_array, npoints,degen, band_co
                 #plt.plot(energy,g_times_f,"k")
                 #plt.title("%s"%e_fermi)
                 #plt.show()
-                temp_dens = 2*deg * D * sqrt(averaged_eff_mass) * n.trapz(MV_smearing(state_energy+t**2,beta_eV,e_fermi),dx=dt) * (state**2 / square_norm)
+                temp_dens = 2*deg * D * n.sqrt(averaged_eff_mass) * n.trapz(MV_smearing(state_energy+t**2,beta_eV,e_fermi),dx=dt) * (state**2 / square_norm)
                 el_density += temp_dens
-                contrib[j] += sum(temp_dens)
+                contrib[j] += n.sum(temp_dens)
                   
     # Up to now, el_density is in 1/ang; we want it in 1/cm
     if band_contribution == False:
@@ -812,7 +828,7 @@ def get_energy_gap(c_states,v_states,c_degen,v_degen):
         all_val_states_energies = n.append(all_val_states_energies, [s[0] for s in v_states[j]])
     
     #suppressing the first entries of the arrays
-    return n.min(np.delete(all_cond_states_energies,0)) - n.max(np.delete(all_val_states_energies,0))
+    return n.min(n.delete(all_cond_states_energies,0)) - n.max(n.delete(all_val_states_energies,0))
 
 def get_hole_density(v_states, e_fermi, v_mass_array, npoints, degen, band_contribution = False, avg_eff_mass = False):
     """
@@ -824,11 +840,11 @@ def get_hole_density(v_states, e_fermi, v_mass_array, npoints, degen, band_contr
 
     Return a positive number
     """
-    D = n.sqrt(2.) / n.pi / sqrt(HBAR2OVERM0)
+    D = n.sqrt(2.) / n.pi / n.sqrt(HBAR2OVERM0)
     
     h_density = n.zeros(npoints)  
     
-    avg_mass = np.zeros((1,3))
+    avg_mass = n.zeros((1,3))
     
     contrib = n.zeros(len(degen))
     for j in range(len(degen)):
@@ -847,9 +863,9 @@ def get_hole_density(v_states, e_fermi, v_mass_array, npoints, degen, band_contr
                 avg_mass = n.append(avg_mass,[[state_energy,state_energy-e_fermi,averaged_eff_mass]],axis=0)
                   
             if not smearing and state_energy > e_fermi:
-                h_density += deg * D * sqrt(averaged_eff_mass) * 2. * sqrt(state_energy - e_fermi) * (
+                h_density += deg * D * n.sqrt(averaged_eff_mass) * 2. * n.sqrt(state_energy - e_fermi) * (
                     state**2 / square_norm)
-                contrib[j] += sum(deg * D * sqrt(averaged_eff_mass) * 2. * sqrt(state_energy - e_fermi) * (
+                contrib[j] += n.sum(deg * D * n.sqrt(averaged_eff_mass) * 2. * n.sqrt(state_energy - e_fermi) * (
                     state**2 / square_norm))    
                       
              
@@ -859,9 +875,9 @@ def get_hole_density(v_states, e_fermi, v_mass_array, npoints, degen, band_contr
                 # change of variable E = state_energy + t**2
                 dt = n.sqrt(energy_range)/n_int 
                 t = n.arange(0,n.sqrt(energy_range),dt) 
-                temp_dens = 2*deg * D * sqrt(averaged_eff_mass) * n.trapz(MV_smearing(2*e_fermi-state_energy+t**2,beta_eV,e_fermi),dx=dt) * (state**2 / square_norm)
+                temp_dens = 2*deg * D * n.sqrt(averaged_eff_mass) * n.trapz(MV_smearing(2*e_fermi-state_energy+t**2,beta_eV,e_fermi),dx=dt) * (state**2 / square_norm)
                 h_density += temp_dens
-                contrib[j] += sum(temp_dens)
+                contrib[j] += n.sum(temp_dens)
                 
                 # to keep a trace of old work
                 """
@@ -903,7 +919,7 @@ def find_efermi(c_states, v_states, c_mass_array, v_mass_array, c_degen, v_degen
         all_states_energies = n.append(all_states_energies,[s[0] for s in c_states[i]])
     for j in range(len(v_degen)):
         all_states_energies = n.append(all_states_energies, [s[0] for s in v_states[j]])
-    all_states_energies = np.delete(all_states_energies,0)
+    all_states_energies = n.delete(all_states_energies,0)
     # I set the boundaries for the bisection algorithm; I could in principle
     # also extend these ranges
     ef_l = all_states_energies.min()-more_energy
@@ -1027,7 +1043,7 @@ def get_conduction_states_p(slab):
         H[i,2,:][reordering]  += (HBAR2OVERM0/2.) / delta_x**2 / mass_differences
         # mass_differences[1+1] is the average mass between 1 and 2
         H[i,2,:][reordering]  += (HBAR2OVERM0/2.) / delta_x**2 / mass_differences[
-            (arange(slab.npoints)+1) % slab.npoints]
+            (n.arange(slab.npoints)+1) % slab.npoints]
 
         # note! The matrix is symmetric only if the mesh step is identical for all steps
         # I use 1: in the second index because the upper diagonal has one element less, and
@@ -1090,7 +1106,7 @@ def get_valence_states_p(slab):
     
         H[i,2,:][reordering]  += (HBAR2OVERM0/2.) / delta_x**2 / mass_differences
         H[i,2,:][reordering]  += (HBAR2OVERM0/2.) / delta_x**2 / mass_differences[
-            (arange(slab.npoints)+1) % slab.npoints]
+            (n.arange(slab.npoints)+1) % slab.npoints]
 
         superdiagonal = - (HBAR2OVERM0/2.) / delta_x**2 / mass_differences
         H[i][reordering_superdiagonals] = superdiagonal
@@ -1202,9 +1218,9 @@ def run_simulation(slab, max_steps, nb_states):
     # I don't want the terminal to be flooded with every single step
     if reduce_stdout_output:
         sys.stdout = open(os.devnull, "w")
-    
+
+    converged = False
     try:
-        converged = False
         for iteration in range(max_steps):
             print 'starting iteration {}...'.format(iteration)
             it += 1
@@ -1237,7 +1253,8 @@ def run_simulation(slab, max_steps, nb_states):
     if reduce_stdout_output:
         sys.stdout = sys.__stdout__
     if not converged:
-        print "****** WARNING! Calculation not converged ********"    
+        print "****** ERROR! Calculation not converged ********"
+        sys.exit(1)
     
     #should print all results at each step in files
     el_density, el_contrib, avg_cond_mass = get_electron_density(c_states, e_fermi, slab._conddosmass, slab.npoints, slab._conddegen, band_contribution = True, avg_eff_mass = True)
@@ -1257,7 +1274,7 @@ def run_simulation(slab, max_steps, nb_states):
          #print "El contrib: ", el_contrib
          #print "Hole contrib: ", hole_contrib
          
-    matrix = [slab.get_xgrid(),ones(slab.npoints) * e_fermi]
+    matrix = [slab.get_xgrid(),n.ones(slab.npoints) * e_fermi]
     zoom_factor = 10. # To plot eigenstates
     
     # adding the potential profile of each band
@@ -1268,8 +1285,8 @@ def run_simulation(slab, max_steps, nb_states):
         for w, v in c_states[k]:
             if i >= nb_states:
                 break
-            matrix.append(w + zoom_factor * abs(v)**2)
-            matrix.append(ones(slab.npoints) * w)
+            matrix.append(w + zoom_factor * n.abs(v)**2)
+            matrix.append(n.ones(slab.npoints) * w)
             i+=1
              
     for l in range(slab._nval_max):   
@@ -1279,8 +1296,8 @@ def run_simulation(slab, max_steps, nb_states):
             if j >= nb_states:
                   break
             # Plot valence bands upside down
-            matrix.append(w - zoom_factor * abs(v)**2)
-            matrix.append(ones(slab.npoints) * w)
+            matrix.append(w - zoom_factor * n.abs(v)**2)
+            matrix.append(n.ones(slab.npoints) * w)
             j+= 1
    
     #Keeping the user aware of the time spent on each main task
@@ -1294,8 +1311,6 @@ def run_simulation(slab, max_steps, nb_states):
                 
                 
 if __name__ == "__main__":
-    from pylab import *
-
     # Read files
     try:
         json_matprop = sys.argv[1]
@@ -1325,6 +1340,9 @@ if __name__ == "__main__":
     #do we plot the fits for new strains ?
     plot_fit = input_dict["plot_fit"]
   
+    if plot_fit:
+        from pylab import *
+
     if calculation_type == "single_point":
          print "\n"
          print "Starting single-point calculation..."
@@ -1387,15 +1405,15 @@ if __name__ == "__main__":
          
          #writing results into files
          print"General information printed in: "+out_folder+'/general_info.txt'
-         np.savetxt(out_folder+'/general_info.txt',np.atleast_2d(res[0]),header='1: Nb of iterations, 2: Voltage conv param, 3: Fermi energy conv param, 4: delta_x (ang),\
+         n.savetxt(out_folder+'/general_info.txt',n.atleast_2d(res[0]),header='1: Nb of iterations, 2: Voltage conv param, 3: Fermi energy conv param, 4: delta_x (ang),\
          5: Fermi energy (eV), 6: Total free electron density (1/cm), 7: Total free holes density (1/cm), 8: Total free electron density (1/b), 9: Total free holes density (1/b)')
          
          print"Band data printed in: "+out_folder+'/band_data.txt'
-         np.savetxt(out_folder+'/band_data.txt',np.transpose(res[1][0]),header="1: position (ang), 2: Fermi energy (eV), the rest is organized as follow for each band:\
+         n.savetxt(out_folder+'/band_data.txt',n.transpose(res[1][0]),header="1: position (ang), 2: Fermi energy (eV), the rest is organized as follow for each band:\
          \n  First column is the potential profile of the band (in eV). The next pairs of columns are the wave function and the energy (eV) of the band's states")
          
          print"Free cariers density plotted in: "+out_folder+'/density_profile.txt'
-         np.savetxt(out_folder+'/density_profile.txt',np.transpose(res[2]),header="1: position (ang), 2: Free electrons density (1/cm^2), 3: Free holes density (1/cm^2) ")
+         n.savetxt(out_folder+'/density_profile.txt',n.transpose(res[2]),header="1: position (ang), 2: Free electrons density (1/cm^2), 3: Free holes density (1/cm^2) ")
          print"\n"
          
          
@@ -1407,10 +1425,10 @@ if __name__ == "__main__":
          #build arrays containings the strains and the widths
          
          #strain
-         strain_array = np.arange(input_dict["strain"]["min_strain"],input_dict["strain"]["max_strain"]+0.5*input_dict["strain"]["strain_step"],input_dict["strain"]["strain_step"])
+         strain_array = n.arange(input_dict["strain"]["min_strain"],input_dict["strain"]["max_strain"]+0.5*input_dict["strain"]["strain_step"],input_dict["strain"]["strain_step"])
          
          #width
-         width_array = np.arange(input_dict["width"]["min_width"],input_dict["width"]["max_width"]+0.5*input_dict["width"]["width_step"],input_dict["width"]["width_step"])
+         width_array = n.arange(input_dict["width"]["min_width"],input_dict["width"]["max_width"]+0.5*input_dict["width"]["width_step"],input_dict["width"]["width_step"])
          
          #updating the materials properties for the new strains
          plotting_the_fit = False
@@ -1422,7 +1440,7 @@ if __name__ == "__main__":
              plotting_the_fit = False
          
          #need to create a slab for each of those situation, run a simulation and retrieve the total carrier density
-         data = np.zeros((strain_array.size*width_array.size,12))
+         data = n.zeros((strain_array.size*width_array.size,12))
          
          i = 0
          for strain in strain_array:
@@ -1449,7 +1467,7 @@ if __name__ == "__main__":
          
          
          print "Data printed in file: "+out_folder+'/map_data.txt'
-         np.savetxt(out_folder+'/map_data.txt', data, header="1: strain, 2: width of unstrained slab (ang), 3: total electron density (1/b), 4: total holes density (1/b)\
+         n.savetxt(out_folder+'/map_data.txt', data, header="1: strain, 2: width of unstrained slab (ang), 3: total electron density (1/b), 4: total holes density (1/b)\
           5: width of the strained slab (ang), 6: nb of iterations, 7: potential conv param, 8: Fermi energy conv param, 9: delta_x (ang), 10: Fermi energy (eV)\
            11: total electron density (1/cm), 12: total holes density (1/cm)")
          print "\n"
@@ -1457,6 +1475,14 @@ if __name__ == "__main__":
     else:
          print >> sys.stderr ("The Calculation must either be 'single-point' or 'map'")
 
+    # Disclaimer
+    print "#"*72
+    print "# If you use this code in your work, please cite the following paper:"
+    print "# "
+    print "# A. Bussy, G. Pizzi, M. Gibertini, Strain-induced polar discontinuities"
+    print "# in 2D materials from combined first-principles and Schroedinger-Poisson"
+    print "# simulations, arXiv:1705.01303 (2017)."
+    print "#"*72
     
 
 

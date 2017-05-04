@@ -1,0 +1,20 @@
+{
+          "strain": {
+                    "max_strain": 0.01, 
+                    "min_strain": 0.0, 
+                    "strain_step": 0.005
+          }, 
+          "width": {
+                    "min_width": 10.0, 
+                    "width_step": 10.0, 
+                    "max_width": 60.0
+          }, 
+          "smearing": true, 
+          "nb_of_steps": 200, 
+	  "upper_delta_x_limit": 0.5,
+          "calculation": "map", 
+          "max_iteration": 1000, 
+          "out_dir": "map_output", 
+          "plot_fit": false, 
+          "KbT": 0.005
+}
