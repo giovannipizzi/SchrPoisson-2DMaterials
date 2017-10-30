@@ -15,7 +15,7 @@ If you use this code in your work, please cite the following paper:
 
 A. Bussy, G. Pizzi, M. Gibertini, Strain-induced polar discontinuities
 in 2D materials from combined first-principles and Schroedinger-Poisson
-simulations, arXiv:1705.01303 (2017).
+simulations, Phys. Rev. B 96, 165438 (2017).
 
 This code is released under a MIT license, see LICENSE.txt file in the main
 folder of the code repository, hosted on GitHub at
@@ -1481,7 +1481,8 @@ if __name__ == "__main__":
     print "# "
     print "# A. Bussy, G. Pizzi, M. Gibertini, Strain-induced polar discontinuities"
     print "# in 2D materials from combined first-principles and Schroedinger-Poisson"
-    print "# simulations, arXiv:1705.01303 (2017)."
+    print "# simulations, Phys. Rev. B 96, 165438 (2017)."
+    print "# DOI: 10.1103/PhysRevB.96.165438"
     print "#"*72
     
 

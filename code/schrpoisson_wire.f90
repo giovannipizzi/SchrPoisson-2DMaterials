@@ -9,7 +9,7 @@
 !!
 !! A. Bussy, G. Pizzi, M. Gibertini, Strain-induced polar discontinuities 
 !! in 2D materials from combined first-principles and Schroedinger-Poisson 
-!! simulations, arXiv:1705.01303 (2017).
+!! simulations, Phys. Rev. B 96, 165438 (2017).
 !! 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
