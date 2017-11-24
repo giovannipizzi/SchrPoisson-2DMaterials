@@ -1,0 +1,4 @@
+appmode
+numpy
+scipy
+matplotlib
