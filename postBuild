@@ -6,3 +6,4 @@ make -C code
 python2 -m pip install pip setuptools --upgrade --user
 python2 -m pip install ipykernel --user
 python2 -m ipykernel install --user
+python2 -m pip install -r requirements2.txt
