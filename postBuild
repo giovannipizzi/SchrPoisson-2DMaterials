@@ -3,5 +3,5 @@ jupyter serverextension enable --py --sys-prefix appmode
 make -C code
 
 # python2 kernel
-python2 -m pip install ipykernel
-python2 -m ipykernel install --user
+#python2 -m pip install ipykernel
+#python2 -m ipykernel install --user
