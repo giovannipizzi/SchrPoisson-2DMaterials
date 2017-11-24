@@ -26,6 +26,7 @@ If you use this code in your work, please cite the following paper:
 Try it live!
 ============
 `Run the simulation live in your browser`_ (no login required!)
+
 .. image:: https://mybinder.org/badge.svg :target: https://mybinder.org/v2/gh/giovannipizzi/schrpoisson_2dmaterials/binder?urlpath=%2Fapps%2F2D-Schroedinger-Poisson-solver.ipynb
 
 
