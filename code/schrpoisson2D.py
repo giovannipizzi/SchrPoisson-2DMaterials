@@ -328,9 +328,9 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
     #plotting the fits if need be
     if plot_fit:
          plt.show()
-         print >> sys.stderr, ("Press any key (+ENTER) to close all plots and continue")
-         raw_input()
-         plt.close("all")
+         #print >> sys.stderr, ("Press any key (+ENTER) to close all plots and continue")
+         #raw_input()
+         #plt.close("all")
          plt.ioff()
     
     # it should never happen as it should be tested before hand
@@ -574,7 +574,8 @@ class Slab(object):
         
         if self._indicator[0]*self._indicator[1] < 0:
             #oscillation, take the middle ground
-            print "OSCILLATION"
+            if not reduce_stdout_output:            
+                print "OSCILLATION"
             self._subcounter = 0
             self.max_step_size *= 0.1
             if self.max_step_size <= 0.1*V_conv_threshold:
@@ -612,8 +613,8 @@ class Slab(object):
                                     self._over = True
 
                                     
-                           
-        print 'convergence param:', current_max_step_size         
+        if not reduce_stdout_output:             
+            print 'convergence param:', current_max_step_size         
         
         if current_max_step_size != 0 and  self._over == False:
                            #self._V += step * min(self.max_step_size, current_max_step_size) #/ (current_max_step_size)
@@ -625,14 +626,16 @@ class Slab(object):
                   
         elif self._over == True:
             self._V = self._old_V
-            print "Final convergence parameter: ", check_val
+            if not reduce_stdout_output:
+                print "Final convergence parameter: ", check_val
             self._finalV_check = check_val
                   
         if n.abs(self._Ef[0]-self._Ef[1]) <= Ef_conv_threshold and current_max_step_size < 10*V_conv_threshold:
             self._E_count += 1
             
             if self._E_count  == 4:
-                print "Convergence of Fermi energy: ", n.abs(self._Ef[0]-self._Ef[1])
+                if not reduce_stdout_output:
+                    print "Convergence of Fermi energy: ", n.abs(self._Ef[0]-self._Ef[1])
                 current_max_step_size = 0.1*V_conv_threshold # froced convergence if that happens 4 times in a row
                 if is_periodic:
                     check_V = -1.*spw.periodic_recursive_poisson(self._xgrid,total_charge_density,self._alpha,max_iteration)[0] # minus 1 because function returns electrostatic potential, not energy
@@ -640,7 +643,8 @@ class Slab(object):
                 else:
                     check_V = -1.*spw.nonperiodic_recursive_poisson(self._xgrid,total_charge_density,self._alpha,max_iteration)[0]
                 check_val = n.max(n.abs(check_V-self._V))
-                print "Final convergence parameter: ", check_val
+                if not reduce_stdout_output:                
+                    print "Final convergence parameter: ", check_val
                 self._finalV_check = check_val
         else:
                            self._E_count = 0    
@@ -1189,20 +1193,21 @@ def get_valence_states_np(slab):
     return res
   
 
-def run_simulation(slab, max_steps, nb_states, smearing, beta_eV, b_lat, delta_x):
+def run_simulation(slab, max_steps, nb_states, smearing, beta_eV, b_lat, delta_x, callback=None):
     """
     This function launches the self-consistant Schroedinger--Poisson calculations and returns all the relevant data
+
+    If a callback function is passed, it is called with the following kwargs:
+    callback(step, e_fermi) 
     """ 
     it = 0
 
     # I don't want the terminal to be flooded with every single step
-    if reduce_stdout_output:
-        sys.stdout = open(os.devnull, "w")
-
     converged = False
     try:
         for iteration in range(max_steps):
-            print 'starting iteration {}...'.format(iteration)
+            if not reduce_stdout_output:
+                print 'starting iteration {}...'.format(iteration)
             it += 1
             start_t = time.time()
             if is_periodic:
@@ -1221,18 +1226,20 @@ def run_simulation(slab, max_steps, nb_states, smearing, beta_eV, b_lat, delta_x
                                   smearing=smearing, beta_eV=beta_eV)
             end_t = time.time()
             slab.update_computing_times("Fermi", end_t-start_t)
-            print iteration, e_fermi
+            if not reduce_stdout_output:
+                print iteration, e_fermi
+            if callback is not None:
+                callback(step=iteration, e_fermi=e_fermi)
 
             zero_elfield = is_periodic
             converged = slab.update_V(c_states, v_states, e_fermi, zero_elfield=zero_elfield)
             # slab._slope is in V/ang; the factor to bring it to V/cm
-            print 'Added E field: {} V/cm '.format(slab._slope * 1.e8) 
+            if not reduce_stdout_output:               
+                print 'Added E field: {} V/cm '.format(slab._slope * 1.e8) 
             if converged:
                 break
     except KeyboardInterrupt:
         pass
-    if reduce_stdout_output:
-        sys.stdout = sys.__stdout__
     if not converged:
         raise InternalError("****** ERROR! Calculation not converged ********")
     
@@ -1253,32 +1260,59 @@ def run_simulation(slab, max_steps, nb_states, smearing, beta_eV, b_lat, delta_x
         hole_contrib /= tot_hole_dens
          #print "El contrib: ", el_contrib
          #print "Hole contrib: ", hole_contrib
-         
+    
+    bands = {
+        'x': slab.get_xgrid(),
+        'e_fermi': e_fermi,
+        'conduction': [],
+        'valence': []
+    }   
     matrix = [slab.get_xgrid(),n.ones(slab.npoints) * e_fermi]
     zoom_factor = 10. # To plot eigenstates
     
     # adding the potential profile of each band
-         
+       
     for k in range(slab._ncond_min):
+        this_edge = {}
         i=0
         matrix.append(slab.get_conduction_profile()[k])
+        this_edge['profile'] = slab.get_conduction_profile()[k]
+        this_edge['states'] = []
         for w, v in c_states[k]:
             if i >= nb_states:
                 break
+            this_edge['states'].append(
+                {
+                    'energy': w,
+                    'profile': w + zoom_factor * n.abs(v)**2,
+                })
             matrix.append(w + zoom_factor * n.abs(v)**2)
             matrix.append(n.ones(slab.npoints) * w)
             i+=1
+        bands['conduction'].append(this_edge)
              
     for l in range(slab._nval_max):   
+        this_edge = {}
         j=0     
         matrix.append(slab.get_valence_profile()[l])
+        this_edge['profile'] = slab.get_valence_profile()[l]
+        this_edge['states'] = []        
         for w, v in v_states[l][::-1]:
             if j >= nb_states:
-                  break
-            # Plot valence bands upside down
+                break
+
+            # Plot valence bands upside down                
+            this_edge['states'].append(
+                {
+                    'energy': w,
+                    'profile': w - zoom_factor * n.abs(v)**2,
+                })                  
+            
             matrix.append(w - zoom_factor * n.abs(v)**2)
             matrix.append(n.ones(slab.npoints) * w)
             j+= 1
+        bands['valence'].append(this_edge)
+
    
     #Keeping the user aware of the time spent on each main task
     print "Total time spent solving Poisson equation: ", slab.get_computing_times()[0], " (s)"
@@ -1286,12 +1320,12 @@ def run_simulation(slab, max_steps, nb_states, smearing, beta_eV, b_lat, delta_x
     print "Total time spent computing the electronic states: ", slab.get_computing_times()[2] , " (s)"
     
     return [[it, slab._finalV_check, slab._finalE_check, delta_x, e_fermi,  tot_el_dens, tot_hole_dens ,tot_el_dens_2,tot_hole_dens_2 ],
-             [matrix],
+             [matrix, bands],
              [slab.get_xgrid(),el_density_per_cm2,hole_density_per_cm2]]
                 
  
 
-def main_run(matprop, input_dict):
+def main_run(matprop, input_dict, callback=None):
     """
     Main loop to run the code.
 
@@ -1367,7 +1401,7 @@ def main_run(matprop, input_dict):
          slab = Slab(layers_p, materials_properties=mat_properties, delta_x = delta_x,
              smearing=smearing, beta_eV=beta_eV)
          
-         res = run_simulation(slab = slab, max_steps = max_steps, nb_states = input_dict["nb_of_states_per_band"], smearing=smearing, beta_eV=beta_eV, b_lat=b_lat, delta_x=delta_x)
+         res = run_simulation(slab = slab, max_steps = max_steps, nb_states = input_dict["nb_of_states_per_band"], smearing=smearing, beta_eV=beta_eV, b_lat=b_lat, delta_x=delta_x, callback=callback)
 
          print("\n")
          print("Convergence reached after %s iterations." %res[0][0])
@@ -1389,7 +1423,8 @@ def main_run(matprop, input_dict):
              'filename': 'band_data.txt',
              'description': "Band data",
              'data': n.transpose(res[1][0]),
-             'header': "1: position (ang), 2: Fermi energy (eV), the rest is organized as follow for each band:\n  First column is the potential profile of the band (in eV). The next pairs of columns are the wave function and the energy (eV) of the band's states"
+             'header': "1: position (ang), 2: Fermi energy (eV), the rest is organized as follow for each band:\n  First column is the potential profile of the band (in eV). The next pairs of columns are the wave function and the energy (eV) of the band's states",
+             'metadata': res[1][1],
              }
 
          out_files['density_profile'] = {
@@ -1440,7 +1475,8 @@ def main_run(matprop, input_dict):
                   
                   print "Starting single-point calculation with strain = %s and width = %s ..." %(strain,width)
                   res = run_simulation(slab = slab, max_steps = max_steps, nb_states = 10, #arbitrary nb of states since not of interest here
-                      smearing = smearing, beta_eV=beta_eV, b_lat=b_lat, delta_x=delta_x)
+                      smearing = smearing, beta_eV=beta_eV, b_lat=b_lat, delta_x=delta_x,
+                      callback=callback)
                   print "\n"
                   
                   data[i] = [strain, width , res[0][7], res[0][8], width*(1.+strain), res[0][0], res[0][1], res[0][2], res[0][3], res[0][4], res[0][5], res[0][6]]
