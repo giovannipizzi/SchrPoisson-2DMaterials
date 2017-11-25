@@ -1229,7 +1229,7 @@ def run_simulation(slab, max_steps, nb_states, smearing, beta_eV, b_lat, delta_x
             if not reduce_stdout_output:
                 print iteration, e_fermi
             if callback is not None:
-                callback(step=iteration, e_fermi=e_fermi)
+                callback(step=iteration+1, e_fermi=e_fermi, final=False)
 
             zero_elfield = is_periodic
             converged = slab.update_V(c_states, v_states, e_fermi, zero_elfield=zero_elfield)
