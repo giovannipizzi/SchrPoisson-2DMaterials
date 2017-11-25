@@ -30,6 +30,18 @@ Try it live!
 .. image:: https://mybinder.org/badge.svg 
    :target: https://mybinder.org/v2/gh/giovannipizzi/schrpoisson_2dmaterials/master?urlpath=%2Fapps%2F2D-Schroedinger-Poisson-solver.ipynb
 
+.. image:: https://raw.githubusercontent.com/giovannipizzi/schrpoisson_2dmaterials/master/static/submission.png
+   :width: 50%
+   :align: center
+
+.. image:: https://raw.githubusercontent.com/giovannipizzi/schrpoisson_2dmaterials/master/static/figure1.png
+   :width: 50%
+   :align: center
+
+.. image:: https://raw.githubusercontent.com/giovannipizzi/schrpoisson_2dmaterials/master/static/figure2.png
+   :width: 50%
+   :align: center
+
 
 ==============
 How to compile
