@@ -90,10 +90,10 @@ The bulk of the numerical computations is written in Fortran in the  \texttt{sch
 To compile the code, run the \texttt{make} command in the \texttt{code} folder.
 You will need to have the \texttt{f2py} executable\footnote{In most cases, if you already have a recent python distribution and \texttt{pip}, you just need to run \texttt{pip install numpy}, or use your package manager to install python-numpy. See here for more information: \url{https://docs.scipy.org/doc/numpy-dev/f2py/}}, that is part of \texttt{numpy}. 
 
-After running \texttt{make}, the main python code (\texttt{2Dschrpoisson.py}) is ready to be run using the following command:
+After running \texttt{make}, the main python code (\texttt{schrpoisson2D.py}) is ready to be run using the following command:
 
 \begin{quote}
-\texttt{python 2Dschrpoisson.py \{material\_properties\}.json  \{calc\_input\}.json}
+\texttt{python schrpoisson2D.py \{material\_properties\}.json  \{calc\_input\}.json}
 \end{quote}
 
 Note that if the two input json files are not in the same folder, you need to specify the full path to them.

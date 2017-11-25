@@ -1,0 +1,11 @@
+jupyter nbextension     enable --py --sys-prefix appmode
+jupyter serverextension enable --py --sys-prefix appmode
+
+# python2 kernel
+python2 -m pip install pip setuptools --upgrade --user
+python2 -m pip install ipykernel --user
+python2 -m ipykernel install --user
+python2 -m pip install -r requirements2.txt --user
+
+# make gfortran code, but with the py2.7 code
+PATH=~/.local/bin/:$PATH make -C code

@@ -1,0 +1,4 @@
+gfortran
+gcc
+python-pip
+libpython-dev
