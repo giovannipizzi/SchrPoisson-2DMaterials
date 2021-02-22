@@ -78,7 +78,7 @@ def read_input_materials_properties(matprop):
          
     #looping over the first input dict entry to get the keys
     try:
-         for key in matprop["0.00"].keys():
+         for key in list(matprop["0.00"].keys()):
              if "valence" in key:
                   valence_keys.append(key)
              if "conduction" in key:
@@ -90,7 +90,7 @@ def read_input_materials_properties(matprop):
     
     #looping over the different strains
     try:
-         for strain in matprop.keys():
+         for strain in list(matprop.keys()):
              condenergies = []
              valenergies = []
              condmass = []
@@ -135,7 +135,7 @@ def read_input_materials_properties(matprop):
     #creating the delta doping layers that will appear at interfaces
     #looping over the strains, add a n and p delta doping for each
     
-    for strain in suitable_mat_prop.keys():
+    for strain in list(suitable_mat_prop.keys()):
          #creating n_deltadoping
          suitable_mat_prop[strain+"_n_deltadoping"] = {}
          suitable_mat_prop[strain+"_n_deltadoping"]["ndoping"] = suitable_mat_prop[strain]["pol_charge"]
@@ -157,21 +157,21 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
         import matplotlib.pyplot as plt
 
     # initializing arrays containing valence and conduction properties
-    valenergies = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["valenergies"]))) # len(mat_prop)/3 because for each strain there are 2 delta doping
-    condenergies = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["condenergies"])))
-    valmass = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["valmass"])))
-    condmass = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["condmass"])))
-    valdosmass = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["valdosmass"])))
-    conddosmass = n.zeros((len(mat_prop)/3,len(mat_prop["0.00"]["conddosmass"])))
-    pol_charge = n.zeros(len(mat_prop)/3)
-    alpha = n.zeros(len(mat_prop)/3)
+    valenergies = n.zeros((len(mat_prop)//3,len(mat_prop["0.00"]["valenergies"]))) # len(mat_prop)/3 because for each strain there are 2 delta doping
+    condenergies = n.zeros((len(mat_prop)//3,len(mat_prop["0.00"]["condenergies"])))
+    valmass = n.zeros((len(mat_prop)//3,len(mat_prop["0.00"]["valmass"])))
+    condmass = n.zeros((len(mat_prop)//3,len(mat_prop["0.00"]["condmass"])))
+    valdosmass = n.zeros((len(mat_prop)//3,len(mat_prop["0.00"]["valdosmass"])))
+    conddosmass = n.zeros((len(mat_prop)//3,len(mat_prop["0.00"]["conddosmass"])))
+    pol_charge = n.zeros(len(mat_prop)//3)
+    alpha = n.zeros(len(mat_prop)//3)
     
     # the strain array vs which evry physical quantity will be fitted (not sorted yet)
-    strain = n.zeros(len(mat_prop)/3)
+    strain = n.zeros(len(mat_prop)//3)
     
     # looping on the material properties versus strain
     i = 0
-    for key in mat_prop.keys():
+    for key in list(mat_prop.keys()):
          if "doping" not in key:
              strain[i] = float(key)
              valenergies[i,:] = mat_prop[key]["valenergies"] 
@@ -335,7 +335,7 @@ def update_mat_prop_for_new_strain(mat_prop, new_strain, plot_fit = False):
          plt.ioff()
     
     # it should never happen as it should be tested before hand
-    for key in mat_prop.keys():
+    for key in list(mat_prop.keys()):
          if "doping" not in key:
              if float(key) == new_strain:
                   mat_prop[str(new_strain)] = mat_prop[key]

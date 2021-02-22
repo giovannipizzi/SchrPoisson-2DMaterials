@@ -28,13 +28,13 @@ Try it live!
 `Run the simulation live in your browser`_ (no login required!)
 
 .. image:: https://mybinder.org/badge.svg 
-   :target: https://mybinder.org/v2/gh/giovannipizzi/schrpoisson_2dmaterials/master?urlpath=%2Fapps%2F2D-Schroedinger-Poisson-solver.ipynb
+   :target: https://mybinder.org/v2/gh/giovannipizzi/schrpoisson-2dmaterials/master?urlpath=%2Fapps%2Fsolver.ipynb
 
-.. image:: https://raw.githubusercontent.com/giovannipizzi/schrpoisson_2dmaterials/master/static/submission.png
+.. image:: https://raw.githubusercontent.com/giovannipizzi/schrpoisson-2dmaterials/master/static/submission.png
 
-.. image:: https://raw.githubusercontent.com/giovannipizzi/schrpoisson_2dmaterials/master/static/figure1.png
+.. image:: https://raw.githubusercontent.com/giovannipizzi/schrpoisson-2dmaterials/master/static/figure1.png
 
-.. image:: https://raw.githubusercontent.com/giovannipizzi/schrpoisson_2dmaterials/master/static/figure2.png
+.. image:: https://raw.githubusercontent.com/giovannipizzi/schrpoisson-2dmaterials/master/static/figure2.png
 
 
 ==============
@@ -78,7 +78,7 @@ Code license
 The code is released open-source under a MIT license (see `LICENSE.txt`_ file).
 
 
-.. _PDF documentation: https://github.com/giovannipizzi/schrpoisson_2dmaterials/raw/master/docs/compiled_output/schrpoisson_2dmaterials_docs.pdf
+.. _PDF documentation: https://github.com/giovannipizzi/schrpoisson-2dmaterials/raw/master/docs/compiled_output/schrpoisson_2dmaterials_docs.pdf
 
 .. _DOI: http://doi.org/10.1103/PhysRevB.96.165438
 
@@ -86,5 +86,5 @@ The code is released open-source under a MIT license (see `LICENSE.txt`_ file).
 
 .. _LICENSE.txt: https://github.com/giovannipizzi/schrpoisson_2dmaterials/raw/master/LICENSE.txt
 
-.. _Run the simulation live in your browser: https://mybinder.org/v2/gh/giovannipizzi/schrpoisson_2dmaterials/master?urlpath=%2Fapps%2F2D-Schroedinger-Poisson-solver.ipynb
+.. _Run the simulation live in your browser: https://mybinder.org/v2/gh/giovannipizzi/schrpoisson-2dmaterials/master?urlpath=%2Fapps%2Fsolver.ipynb
 
