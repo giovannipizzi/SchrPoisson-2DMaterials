@@ -84,7 +84,7 @@ The code is released open-source under a MIT license (see `LICENSE.txt`_ file).
 
 .. _arXiv: http://arxiv.org/abs/1705.01303
 
-.. _LICENSE.txt: https://github.com/giovannipizzi/schrpoisson_2dmaterials/raw/master/LICENSE.txt
+.. _LICENSE.txt: https://github.com/giovannipizzi/schrpoisson-2dmaterials/raw/master/LICENSE.txt
 
 .. _Run the simulation live in your browser: https://mybinder.org/v2/gh/giovannipizzi/schrpoisson-2dmaterials/master?urlpath=%2Fapps%2Fsolver.ipynb
 

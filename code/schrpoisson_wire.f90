@@ -15,7 +15,7 @@
 !!
 !! This code is released under a MIT license, see LICENSE.txt file in the main 
 !! folder of the code repository, hosted on GitHub at 
-!! https://github.com/giovannipizzi/schrpoisson_2dmaterials
+!! https://github.com/giovannipizzi/schrpoisson-2dmaterials
 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!
