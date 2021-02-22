@@ -1,4 +1,5 @@
 schrpoisson_wire.so
+schrpoisson_wire.*.so
 single_point_output
 map_output
 *.dSYM
