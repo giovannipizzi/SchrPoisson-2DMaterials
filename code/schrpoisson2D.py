@@ -29,6 +29,7 @@ import scipy.special
 import os
 from operator import add
 import sys
+import warnings
 import json
 
 try:
@@ -575,7 +576,7 @@ class Slab(object):
         if self._indicator[0]*self._indicator[1] < 0:
             #oscillation, take the middle ground
             if not reduce_stdout_output:            
-                print "OSCILLATION"
+                print("OSCILLATION")
             self._subcounter = 0
             self.max_step_size *= 0.1
             if self.max_step_size <= 0.1*V_conv_threshold:
@@ -614,7 +615,7 @@ class Slab(object):
 
                                     
         if not reduce_stdout_output:             
-            print 'convergence param:', current_max_step_size         
+            print('convergence param:', current_max_step_size)         
         
         if current_max_step_size != 0 and  self._over == False:
                            #self._V += step * min(self.max_step_size, current_max_step_size) #/ (current_max_step_size)
@@ -627,7 +628,7 @@ class Slab(object):
         elif self._over == True:
             self._V = self._old_V
             if not reduce_stdout_output:
-                print "Final convergence parameter: ", check_val
+                print("Final convergence parameter: ", check_val)
             self._finalV_check = check_val
                   
         if n.abs(self._Ef[0]-self._Ef[1]) <= Ef_conv_threshold and current_max_step_size < 10*V_conv_threshold:
@@ -635,7 +636,7 @@ class Slab(object):
             
             if self._E_count  == 4:
                 if not reduce_stdout_output:
-                    print "Convergence of Fermi energy: ", n.abs(self._Ef[0]-self._Ef[1])
+                    print("Convergence of Fermi energy: ", n.abs(self._Ef[0]-self._Ef[1]))
                 current_max_step_size = 0.1*V_conv_threshold # froced convergence if that happens 4 times in a row
                 if is_periodic:
                     check_V = -1.*spw.periodic_recursive_poisson(self._xgrid,total_charge_density,self._alpha,max_iteration)[0] # minus 1 because function returns electrostatic potential, not energy
@@ -644,7 +645,7 @@ class Slab(object):
                     check_V = -1.*spw.nonperiodic_recursive_poisson(self._xgrid,total_charge_density,self._alpha,max_iteration)[0]
                 check_val = n.max(n.abs(check_V-self._V))
                 if not reduce_stdout_output:                
-                    print "Final convergence parameter: ", check_val
+                    print("Final convergence parameter: ", check_val)
                 self._finalV_check = check_val
         else:
                            self._E_count = 0    
@@ -1043,7 +1044,7 @@ def get_conduction_states_p(slab):
                                     max_ev=slab.npoints) # max_ev: max # of eigenvalues to expect
                                                          # I use the worst case scenario, where I get
                                                          # all of them
-        result_to_reorder = zip(w, v.T)
+        result_to_reorder = list(zip(w, v.T))
         res.append(tuple((w, v[reordering]) for w, v in result_to_reorder))
         
     return res
@@ -1101,7 +1102,7 @@ def get_valence_states_p(slab):
                                     max_ev=slab.npoints) # max_ev: max # of eigenvalues to expect
                                                          # I use the worst case scenario, where I get
                                                          # all of them
-        result_to_reorder = zip(w, v.T)
+        result_to_reorder = list(zip(w, v.T))
         res.append(tuple((w, v[reordering]) for w, v in result_to_reorder))
         
     return res
@@ -1151,7 +1152,7 @@ def get_conduction_states_np(slab):
                                     max_ev=slab.npoints) # max_ev: max # of eigenvalues to expect
                                                          # I use the worst case scenario, where I get
                                                          # all of them
-        res.append(zip(w, v.T))
+        res.append(list(zip(w, v.T)))
         
     return res
 
@@ -1188,7 +1189,7 @@ def get_valence_states_np(slab):
                                     max_ev=slab.npoints) # max_ev: max # of eigenvalues to expect
                                                          # I use the worst case scenario, where I get
                                                          # all of them
-        res.append(zip(w, v.T))
+        res.append(list(zip(w, v.T)))
         
     return res
   
@@ -1207,7 +1208,7 @@ def run_simulation(slab, max_steps, nb_states, smearing, beta_eV, b_lat, delta_x
     try:
         for iteration in range(max_steps):
             if not reduce_stdout_output:
-                print 'starting iteration {}...'.format(iteration)
+                print('starting iteration {}...'.format(iteration))
             it += 1
             start_t = time.time()
             if is_periodic:
@@ -1227,7 +1228,7 @@ def run_simulation(slab, max_steps, nb_states, smearing, beta_eV, b_lat, delta_x
             end_t = time.time()
             slab.update_computing_times("Fermi", end_t-start_t)
             if not reduce_stdout_output:
-                print iteration, e_fermi
+                print(iteration, e_fermi)
             if callback is not None:
                 callback(step=iteration+1, e_fermi=e_fermi, final=False)
 
@@ -1235,7 +1236,7 @@ def run_simulation(slab, max_steps, nb_states, smearing, beta_eV, b_lat, delta_x
             converged = slab.update_V(c_states, v_states, e_fermi, zero_elfield=zero_elfield)
             # slab._slope is in V/ang; the factor to bring it to V/cm
             if not reduce_stdout_output:               
-                print 'Added E field: {} V/cm '.format(slab._slope * 1.e8) 
+                print('Added E field: {} V/cm '.format(slab._slope * 1.e8)) 
             if converged:
                 break
     except KeyboardInterrupt:
@@ -1315,9 +1316,9 @@ def run_simulation(slab, max_steps, nb_states, smearing, beta_eV, b_lat, delta_x
 
    
     #Keeping the user aware of the time spent on each main task
-    print "Total time spent solving Poisson equation: ", slab.get_computing_times()[0], " (s)"
-    print "Total time spent finding the Fermi level(s): ", slab.get_computing_times()[1], " (s)"
-    print "Total time spent computing the electronic states: ", slab.get_computing_times()[2] , " (s)"
+    print("Total time spent solving Poisson equation: ", slab.get_computing_times()[0], " (s)")
+    print("Total time spent finding the Fermi level(s): ", slab.get_computing_times()[1], " (s)")
+    print("Total time spent computing the electronic states: ", slab.get_computing_times()[2] , " (s)")
     
     return [[it, slab._finalV_check, slab._finalE_check, delta_x, e_fermi,  tot_el_dens, tot_hole_dens ,tot_el_dens_2,tot_hole_dens_2 ],
              [matrix, bands],
@@ -1404,11 +1405,11 @@ def main_run(matprop, input_dict, callback=None):
          res = run_simulation(slab = slab, max_steps = max_steps, nb_states = input_dict["nb_of_states_per_band"], smearing=smearing, beta_eV=beta_eV, b_lat=b_lat, delta_x=delta_x, callback=callback)
 
          print("\n")
-         print("Convergence reached after %s iterations." %res[0][0])
-         print("Voltage convergence parameter: %s" % res[0][1])
-         print("Fermi energy convergence parameter: %s" % res[0][2])
-         print("Total number of free electrons: %s (1/cm)" % res[0][5])
-         print("Total number of free holes: %s (1/cm)" % res[0][6])
+         print(("Convergence reached after %s iterations." %res[0][0]))
+         print(("Voltage convergence parameter: %s" % res[0][1]))
+         print(("Fermi energy convergence parameter: %s" % res[0][2]))
+         print(("Total number of free electrons: %s (1/cm)" % res[0][5]))
+         print(("Total number of free holes: %s (1/cm)" % res[0][6]))
          print("\n")
                   
          #writing results into files
@@ -1473,11 +1474,11 @@ def main_run(matprop, input_dict, callback=None):
                   slab = Slab(layers_p, materials_properties=mat_properties, delta_x = delta_x,
                       smearing=smearing, beta_eV=beta_eV)
                   
-                  print "Starting single-point calculation with strain = %s and width = %s ..." %(strain,width)
+                  print("Starting single-point calculation with strain = %s and width = %s ..." %(strain,width))
                   res = run_simulation(slab = slab, max_steps = max_steps, nb_states = 10, #arbitrary nb of states since not of interest here
                       smearing = smearing, beta_eV=beta_eV, b_lat=b_lat, delta_x=delta_x,
                       callback=callback)
-                  print "\n"
+                  print("\n")
                   
                   data[i] = [strain, width , res[0][7], res[0][8], width*(1.+strain), res[0][0], res[0][1], res[0][2], res[0][3], res[0][4], res[0][5], res[0][6]]
                   i += 1
@@ -1503,34 +1504,34 @@ if __name__ == "__main__":
         json_matprop = sys.argv[1]
         calc_input = sys.argv[2]
     except IndexError:
-        print >> sys.stderr, ("Pass two parameters, containing the JSON files with the materials properties and the calculation input")
+        print(("Pass two parameters, containing the JSON files with the materials properties and the calculation input"), file=sys.stderr)
         sys.exit(1)
     try:
         with open(json_matprop) as f:
             matprop = json.load(f)
     except IOError:
-         print >> sys.stderr, ("Error: The material properties json file (%s) passed as argument does not exist" % json_matprop)
+         print(("Error: The material properties json file (%s) passed as argument does not exist" % json_matprop), file=sys.stderr)
          sys.exit(1)
     except ValueError:
-         print >> sys.stderr, ("Error: The material properties json file (%s) is probably not a valid JSON file" % json_matprop)
+         print(("Error: The material properties json file (%s) is probably not a valid JSON file" % json_matprop), file=sys.stderr)
          sys.exit(1)
     try:
         with open(calc_input) as f:
             input_dict = json.load(f)
     except IOError:
-         print >> sys.stderr, ("Error: The calculation input json file (%s) passed as argument does not exist" % calc_input)
+         print(("Error: The calculation input json file (%s) passed as argument does not exist" % calc_input), file=sys.stderr)
          sys.exit(1)
     except ValueError:
-         print >> sys.stderr, ("Error: The material properties json file (%s) is probably not a valid JSON file" % json_matprop)
+         print(("Error: The material properties json file (%s) is probably not a valid JSON file" % json_matprop), file=sys.stderr)
          sys.exit(1)
     
     try:
         retval = main_run(matprop=matprop, input_dict=input_dict)
     except ValidationError as e:
-        print >> sys.stderr, "Validation error: {}".format(e)
+        print("Validation error: {}".format(e), file=sys.stderr)
         sys.exit(2)
     except InternalError as e:
-        print >> sys.stderr, "Error: {}".format(e)
+        print("Error: {}".format(e), file=sys.stderr)
         sys.exit(3)
 
     out_files = retval['out_files']
@@ -1547,21 +1548,21 @@ if __name__ == "__main__":
 
         n.savetxt(fname,filedata['data'],
             header=filedata['header'])
-        print "{} saved in '{}'".format(
+        print("{} saved in '{}/{}'".format(
             filedata['description'],
             out_folder,
             fname,
-            )
+            ))
 
     # Disclaimer
-    print "#"*72
-    print "# If you use this code in your work, please cite the following paper:"
-    print "# "
-    print "# A. Bussy, G. Pizzi, M. Gibertini, Strain-induced polar discontinuities"
-    print "# in 2D materials from combined first-principles and Schroedinger-Poisson"
-    print "# simulations, Phys. Rev. B 96, 165438 (2017)."
-    print "# DOI: 10.1103/PhysRevB.96.165438"
-    print "#"*72
+    print("#"*72)
+    print("# If you use this code in your work, please cite the following paper:")
+    print("# ")
+    print("# A. Bussy, G. Pizzi, M. Gibertini, Strain-induced polar discontinuities")
+    print("# in 2D materials from combined first-principles and Schroedinger-Poisson")
+    print("# simulations, Phys. Rev. B 96, 165438 (2017).")
+    print("# DOI: 10.1103/PhysRevB.96.165438")
+    print("#"*72)
     
 
 

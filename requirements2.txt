@@ -1,5 +1,0 @@
-appmode
-numpy
-scipy
-matplotlib
-ipywidgets
